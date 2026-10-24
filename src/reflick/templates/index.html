@@ -56,7 +56,7 @@
   <section class="day" x-show="dayVisible('{{ day.isoformat() }}')">
     <h2>{{ day | day_name }}</h2>
     {% for item in items %}
-    {% with show_title=true, filterable=true %}{% include "_screening.html" %}{% endwith %}
+    {% include "_screening.html" %}
     {% endfor %}
   </section>
   {% endfor %}

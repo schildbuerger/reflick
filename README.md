@@ -57,10 +57,10 @@ Cinemas covered so far: Lichtblick-Kino.
 `reflick build` (also run at the end of every `scrape`) writes a static site
 to `site/`:
 
-- `index.html`: all upcoming revivals by day, with search, cinema and
-  language filters. Late shows after midnight are listed under the evening
-  before (e.g. 24:00), as cinemas do.
-- `film/<slug>/`: one page per film with all its screenings.
+- `index.html`: a single page with all upcoming revivals across cinemas by
+  day, with search, cinema and language filters. Each title links to the
+  film's page on the cinema's own website. Late shows after midnight are
+  listed under the evening before (e.g. 24:00), as cinemas do.
 - `reflick.ics`: a calendar feed to subscribe to.
 
 Templates live in `src/reflick/templates/` (Jinja2). Styling comes from

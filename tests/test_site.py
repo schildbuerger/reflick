@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from reflick import db, site
 from reflick.adapters.lichtblick import CINEMA, parse_film_page
+from reflick.models import Cinema, RawScreening
 
 FIXTURES = Path(__file__).parent / "fixtures" / "lichtblick"
 BERLIN = ZoneInfo("Europe/Berlin")
@@ -36,12 +37,12 @@ def test_build_writes_index_film_pages_and_calendar(tmp_path):
     saturday = index.split("Saturday 24 October")[1].split("Sunday 25 October")[0]
     assert "Casablanca" in saturday
     assert ">24:00</time>" in saturday
-    assert 'href="film/casablanca-1942/"' in index
+    assert "Michael Curtiz" in index
     assert "Wiederaufführung in 4K" in index
-
-    film = (out / "film" / "casablanca-1942" / "index.html").read_text(encoding="utf-8")
-    assert "Michael Curtiz" in film
-    assert 'href="../../"' in film
+    # Titles link to the film's page on the cinema's site; no ticket links.
+    assert 'href="https://lichtblick-kino.org/casablanca/"' in index
+    assert "kinoheld" not in index
+    assert not (out / "film").exists()
 
     ics = (out / "reflick.ics").read_bytes().decode()
     assert ics.count("BEGIN:VEVENT") == 3
@@ -50,22 +51,30 @@ def test_build_writes_index_film_pages_and_calendar(tmp_path):
     assert all(len(line.encode()) <= 75 for line in ics.split("\r\n"))
 
 
-def test_rebuild_removes_pages_of_films_no_longer_listed(tmp_path):
-    out = tmp_path / "site"
+def test_single_page_lists_screenings_across_cinemas(tmp_path):
     conn = seeded_db(tmp_path)
-    site.build(conn, out, now=NOW)
-    stale = out / "film" / "old-film-1950"
-    stale.mkdir()
-    site.build(conn, out, now=NOW)
-    assert not stale.exists()
+    other = Cinema("other", "Other Kino", "Somewhere 1, Berlin", "Mitte", "https://other.example/")
+    db.upsert_cinema(conn, other)
+    run = db.start_run(conn, other.id)
+    db.save_screenings(conn, run, [
+        RawScreening(
+            cinema_id=other.id,
+            title="Metropolis",
+            start=datetime(2026, 10, 24, 19, 0, tzinfo=BERLIN),
+            source_url="https://other.example/metropolis",
+            year=1927,
+        )
+    ])
+    db.finish_run(conn, run, "ok")
+
+    out = tmp_path / "site"
+    assert site.build(conn, out, now=NOW) == 4
+    index = (out / "index.html").read_text(encoding="utf-8")
+    assert "Metropolis" in index and "Casablanca" in index
+    assert '<option value="other">Other Kino</option>' in index
+    assert '<option value="lichtblick">Lichtblick-Kino</option>' in index
 
 
 def test_past_screenings_are_not_listed(tmp_path):
     later = datetime(2026, 10, 26, 12, 0, tzinfo=BERLIN)
     assert site.build(seeded_db(tmp_path), tmp_path / "site", now=later) == 0
-
-
-def test_slugify_strips_accents_and_punctuation():
-    assert site.slugify("Ausländer raus! Schlingensiefs Container 2002") == (
-        "auslander-raus-schlingensiefs-container-2002"
-    )

@@ -1,17 +1,13 @@
-"""Static site: renders upcoming revivals into HTML pages and an iCal feed.
+"""Static site: renders upcoming revivals into one HTML page and an iCal feed.
 
 Output layout:
-    index.html              all upcoming revivals by day, with filters
-    film/<slug>/index.html  one page per film
-    reflick.ics             calendar feed of all listed screenings
+    index.html   all upcoming revivals across cinemas by day, with filters
+    reflick.ics  calendar feed of all listed screenings
 """
 
 import hashlib
 import itertools
-import re
-import shutil
 import sqlite3
-import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -41,7 +37,6 @@ class Item:
     screening: RawScreening
     cinema: Cinema
     start: datetime  # in Europe/Berlin
-    film_slug: str
     labels: list[str]
 
     @property
@@ -65,20 +60,6 @@ class Item:
         return " · ".join(p for p in parts if p)
 
 
-@dataclass
-class Film:
-    slug: str
-    items: list[Item]
-
-    @property
-    def first(self) -> Item:
-        return self.items[0]
-
-    @property
-    def days(self) -> list[tuple[date, list[Item]]]:
-        return by_day(self.items)
-
-
 def by_day(items: list[Item]) -> list[tuple[date, list[Item]]]:
     """Group items that are already in start order by programme day."""
     return [
@@ -87,46 +68,28 @@ def by_day(items: list[Item]) -> list[tuple[date, list[Item]]]:
     ]
 
 
-def slugify(text: str) -> str:
-    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "film"
-
-
 def day_name(day: date) -> str:
     return f"{WEEKDAYS[day.weekday()]} {day.day} {MONTHS[day.month - 1]}"
 
 
 def collect(
     screenings: list[RawScreening], cinemas: dict[str, Cinema], now: datetime
-) -> tuple[list[Item], dict[str, Film]]:
-    """Upcoming revivals in start order, plus the films they belong to."""
+) -> list[Item]:
+    """Upcoming revivals across all cinemas, in start order."""
     upcoming = sorted(
         (s for s in screenings if s.start >= now and is_revival(s, now.date())),
         key=lambda s: (s.start, s.title),
     )
-    slugs: dict[tuple[str, int | None], str] = {}
-    films: dict[str, Film] = {}
-    items = []
-    for i, s in enumerate(upcoming):
-        key = (s.title.casefold(), s.year)
-        if key not in slugs:
-            base = slugify(f"{s.title} {s.year}" if s.year else s.title)
-            slug, n = base, 2
-            while slug in films:
-                slug, n = f"{base}-{n}", n + 1
-            slugs[key] = slug
-            films[slug] = Film(slug=slug, items=[])
-        item = Item(
+    return [
+        Item(
             id=i,
             screening=s,
             cinema=cinemas[s.cinema_id],
             start=s.start.astimezone(BERLIN),
-            film_slug=slugs[key],
             labels=revival_labels(s),
         )
-        items.append(item)
-        films[item.film_slug].items.append(item)
-    return items, films
+        for i, s in enumerate(upcoming)
+    ]
 
 
 def _ics_escape(text: str) -> str:
@@ -175,7 +138,7 @@ def render_ics(items: list[Item], now: datetime) -> str:
             f"SUMMARY:{_ics_escape(title)}",
             f"LOCATION:{_ics_escape(f'{item.cinema.name}, {item.cinema.address}')}",
             f"DESCRIPTION:{_ics_escape(description)}",
-            f"URL:{s.ticket_url or s.source_url}",
+            f"URL:{s.source_url}",
             "END:VEVENT",
         ]
     lines.append("END:VCALENDAR")
@@ -197,18 +160,10 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     """Write the site to out_dir. Returns the number of screenings listed."""
     now = now or datetime.now(BERLIN)
     cinemas = db.cinemas(conn)
-    items, films = collect(db.latest_screenings(conn), cinemas, now)
+    items = collect(db.latest_screenings(conn), cinemas, now)
     updated = db.last_update(conn)
-    common = dict(
-        updated=updated.astimezone(BERLIN) if updated else None,
-        cinemas=sorted({i.cinema for i in items}, key=lambda c: c.name),
-    )
-
-    env = _environment()
     out_dir.mkdir(parents=True, exist_ok=True)
-    shutil.rmtree(out_dir / "film", ignore_errors=True)
 
-    days = by_day(items)
     languages = sorted({i.screening.language for i in items if i.screening.language})
     rows = [
         {
@@ -222,17 +177,13 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
         }
         for i in items
     ]
-    index = env.get_template("index.html").render(
-        root="", days=days, languages=languages, rows=rows, total=len(items), **common
+    index = _environment().get_template("index.html").render(
+        days=by_day(items),
+        languages=languages,
+        rows=rows,
+        cinemas=sorted({i.cinema for i in items}, key=lambda c: c.name),
+        updated=updated.astimezone(BERLIN) if updated else None,
     )
     (out_dir / "index.html").write_text(index, encoding="utf-8")
-
-    film_template = env.get_template("film.html")
-    for film in films.values():
-        page_dir = out_dir / "film" / film.slug
-        page_dir.mkdir(parents=True)
-        html = film_template.render(root="../../", film=film, **common)
-        (page_dir / "index.html").write_text(html, encoding="utf-8")
-
     (out_dir / "reflick.ics").write_text(render_ics(items, now), encoding="utf-8", newline="")
     return len(items)

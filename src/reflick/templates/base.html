@@ -6,7 +6,7 @@
   <title>{% block title %}reflick – revival screenings in Berlin{% endblock %}</title>
   <meta name="description" content="Classics, restorations and re-releases in Berlin cinemas, collected in one place.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
-  <link rel="alternate" type="text/calendar" title="reflick calendar" href="{{ root }}reflick.ics">
+  <link rel="alternate" type="text/calendar" title="reflick calendar" href="reflick.ics">
   <style>
     :root { --pico-font-size: 100%; }
     header.site { padding-block: 1.5rem 0.5rem; }
@@ -23,7 +23,7 @@
       border-bottom: 1px solid var(--pico-muted-border-color);
     }
     .screening {
-      display: grid; grid-template-columns: 3.5rem 1fr auto; gap: 0.75rem; align-items: start;
+      display: grid; grid-template-columns: 3.5rem 1fr; gap: 0.75rem; align-items: start;
       padding-block: 0.75rem;
       border-bottom: 1px solid var(--pico-muted-border-color);
     }
@@ -37,21 +37,19 @@
       font-size: 0.75rem; white-space: nowrap;
     }
     .badge.label { border-color: var(--pico-primary-border); color: var(--pico-primary); }
-    .tickets { padding: 0.3rem 0.7rem; font-size: 0.8rem; margin: 0; }
     footer.site { margin-block: 2rem; font-size: 0.8rem; color: var(--pico-muted-color); }
     [x-cloak] { display: none !important; }
     @media (max-width: 576px) {
       .filters { grid-template-columns: 1fr 1fr; }
       .filters input[type=search] { grid-column: 1 / -1; }
       .screening { grid-template-columns: 3rem 1fr; }
-      .screening .tickets { grid-column: 2; justify-self: start; }
     }
   </style>
   {% block head %}{% endblock %}
 </head>
 <body>
   <header class="site container">
-    <h1><a href="{{ root }}">reflick</a></h1>
+    <h1><a href="./">reflick</a></h1>
     <p>Classics, restorations and re-releases in Berlin cinemas.</p>
   </header>
   <main class="container">
@@ -64,7 +62,7 @@
       Times can change, so check with the cinema before you go.
       {% if updated %}Updated {{ updated.strftime("%d.%m.%Y, %H:%M") }}.{% endif %}
     </p>
-    <p><a href="{{ root }}reflick.ics">Subscribe to the calendar (iCal)</a></p>
+    <p><a href="reflick.ics">Subscribe to the calendar (iCal)</a></p>
   </footer>
 </body>
 </html>
