@@ -9,11 +9,19 @@ kinoheld ticket link. Showtime dates have no year ("Freitag 30. Oktober").
 """
 
 import re
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time
 
 from bs4 import BeautifulSoup
 
-from reflick.adapters.base import BERLIN, Adapter, Cache, Fetcher, Programme, clean
+from reflick.adapters.base import (
+    BERLIN,
+    Adapter,
+    Cache,
+    Fetcher,
+    Programme,
+    clean,
+    date_without_year,
+)
 from reflick.models import Cinema, RawScreening
 
 BASE_URL = "https://www.hoefekino.de"
@@ -66,15 +74,11 @@ def parse_facts(lines: list[str]) -> dict:
 
 
 def infer_date(text: str, today: date) -> date:
-    """'Freitag 30. Oktober' has no year: take the one that puts it nearest after today."""
+    """'Freitag 30. Oktober' has no year."""
     m = DATE_RE.search(text)
     if m is None:
         raise ValueError(f"no date in {text!r}")
-    day, month = int(m.group(1)), MONTHS[m.group(2)]
-    candidate = date(today.year, month, day)
-    if candidate < today - timedelta(days=60):
-        candidate = date(today.year + 1, month, day)
-    return candidate
+    return date_without_year(int(m.group(1)), MONTHS[m.group(2)], today)
 
 
 def parse_film_page(html: str, url: str, today: date) -> list[RawScreening]:

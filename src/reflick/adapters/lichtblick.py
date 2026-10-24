@@ -10,7 +10,15 @@ from datetime import date, datetime, time, timedelta
 
 from bs4 import BeautifulSoup, Tag
 
-from reflick.adapters.base import BERLIN, Adapter, Cache, Fetcher, Programme, clean
+from reflick.adapters.base import (
+    BERLIN,
+    Adapter,
+    Cache,
+    Fetcher,
+    Programme,
+    clean,
+    date_without_year,
+)
 from reflick.models import Cinema, RawScreening
 
 BASE_URL = "https://lichtblick-kino.org"
@@ -65,12 +73,9 @@ def parse_credits(text: str) -> dict:
 
 
 def infer_date(day_month: str, today: date) -> date:
-    """'24.10.' has no year: take the one that puts it nearest after today."""
+    """'24.10.' has no year."""
     day, month = (int(p) for p in day_month.strip(". ").split("."))
-    candidate = date(today.year, month, day)
-    if candidate < today - timedelta(days=60):
-        candidate = date(today.year + 1, month, day)
-    return candidate
+    return date_without_year(day, month, today)
 
 
 def parse_start(day_month: str, hhmm: str, today: date) -> datetime:

@@ -3,8 +3,9 @@
 import re
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 from zoneinfo import ZoneInfo
@@ -20,6 +21,44 @@ BERLIN = ZoneInfo("Europe/Berlin")
 def clean(text: str) -> str:
     """Collapse whitespace, including nbsp and thin spaces."""
     return re.sub(r"\s+", " ", text.replace("\xa0", " ").replace(" ", " ")).strip()
+
+
+def language_code(text: str | None) -> str | None:
+    """A language version as cinemas write it, with spellings of 'no dialogue'
+    unified so the site's language filter shows one option for them."""
+    text = clean(text or "")
+    if text.casefold() in {"od", "ohne dialog"}:
+        return "oD"
+    return text or None
+
+
+def date_without_year(day: int, month: int, today: date) -> date:
+    """Programmes print '24.10.' without a year: take the one that puts it
+    nearest after today, allowing for screenings up to two months back."""
+    candidate = date(today.year, month, day)
+    if candidate < today - timedelta(days=60):
+        candidate = date(today.year + 1, month, day)
+    return candidate
+
+
+def fetch_pages(
+    fetcher: "Fetcher",
+    page_url: Callable[[int], str],
+    parse_page: Callable[[str], tuple[list[RawScreening], bool]],
+    until: datetime,
+    max_pages: int = 30,
+) -> list[RawScreening]:
+    """Screenings from a listing split into pages sorted by start time, such as
+    a TYPO3 Solr search (`?tx_solr[page]=2`). `parse_page` returns a page's
+    screenings and whether it was the last page. Stops at `until`, since such
+    listings can run on into placeholder dates decades ahead."""
+    screenings: list[RawScreening] = []
+    for page in range(1, max_pages + 1):
+        found, last = parse_page(fetcher.get(page_url(page)))
+        screenings += [s for s in found if s.start < until]
+        if last or not found or found[-1].start >= until:
+            break
+    return screenings
 
 
 class Fetcher:
