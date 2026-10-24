@@ -21,6 +21,8 @@ SUFFIX_RES = [
     re.compile(r"(?i)\s+[-–]\s+(.*\b(?:gäst\w*|guests?|premiere|q&a|eröffnung)\b.*)$"),
 ]
 PREFIX_RE = re.compile(r"(?i)^(.*\bpremiere)\s*:\s+(?=\S)")
+# "The Killer (1989)": the year is shown separately, so it's dropped without a badge.
+YEAR_SUFFIX_RE = re.compile(r"\s*\((?:18|19|20)\d{2}\)$")
 
 
 def tidy_addon(text: str) -> str:
@@ -33,6 +35,7 @@ def tidy_addon(text: str) -> str:
 
 def split_addons(title: str) -> tuple[str, list[str]]:
     addons: list[str] = []
+    title = YEAR_SUFFIX_RE.sub("", title)
     if m := PREFIX_RE.match(title):
         addons.append(tidy_addon(m.group(1)))
         title = title[m.end():]

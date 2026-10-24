@@ -37,21 +37,32 @@ the cinema labels it as a re-release. Typical labels in German programmes:
 
 ## Development
 
-Python 3.12+. One adapter per cinema lives in `src/reflick/adapters/`; each
-scrape run is stored as a snapshot in a local SQLite database
-(`data/reflick.sqlite`).
+Python 3.12+. One adapter per source lives in `src/reflick/adapters/`. A
+source is a single cinema (Babylon Mitte, Lichtblick-Kino) or a group that
+publishes one programme for several cinemas (Yorck, 14 cinemas). Each scrape
+run of a source is stored as a snapshot in a local SQLite database
+(`data/reflick.sqlite`). A scrape warns when a source, or a single cinema in
+a group, suddenly has no screenings, which usually means its site changed.
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest
-.venv/bin/reflick scrape          # fetch all cinemas, look up genres, rebuild the site
+.venv/bin/reflick scrape          # fetch all sources, look up genres, rebuild the site
+.venv/bin/reflick scrape --source yorck  # just one source
 .venv/bin/reflick enrich          # only look up genres (--retry: re-check films not found)
 .venv/bin/reflick build           # rebuild the site from the database only
 .venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
 
-Cinemas covered so far: Babylon, Lichtblick-Kino.
+Cinemas covered so far: Babylon Mitte, Lichtblick-Kino, and the 14 Yorck
+cinemas (Babylon Kreuzberg, Blauer Stern, Capitol Dahlem, Cinema Paris,
+Delphi Filmpalast, delphi LUX, Filmtheater am Friedrichshain, Kant Kino,
+Kino International, Neues Off, Odeon, Passage, Rollberg, Yorck).
+
+Yorck's film pages (year, director, original title) are only read for
+films that may be revivals, and cached for 30 days in the `page_cache`
+table, so a daily run makes about ten requests once the cache is warm.
 
 ### Genres (OMDb)
 

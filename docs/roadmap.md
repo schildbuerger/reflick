@@ -18,7 +18,7 @@ each scraper will be.
 | Zeughauskino | | | | |
 | Babylon Mitte | babylonberlin.eu/programm | HTML (Joomla), no JSON-LD; whole programme on one page, one `li.mix` per screening with full timestamp | Allowed | **Adapter done.** Credit line is cut off, so film pages are read when the year is missing. Also lists theatre and readings (skipped). Server omits its intermediate certificate: Python/httpx copes, macOS curl doesn't |
 | Lichtblick-Kino | lichtblick-kino.org/programm/ | HTML (WordPress), no JSON-LD; monthly PDF too | Allowed | **Adapter done.** Film pages have credits + all showtimes; tickets via kinoheld; labels "Filmklassiker", "Wiederaufführung in 4K" |
-| Yorck group | | | | 14 cinemas, one shared programme |
+| Yorck group | yorck.de/filme (+ /kinos, /filme/&lt;slug&gt;, /specials/&lt;slug&gt;) | Next.js: JSON in `__NEXT_DATA__`; all 14 cinemas' sessions on one page | Allowed (`Allow: /`) | **Adapter done** (one adapter for all 14). Listing has only the German release date, so film pages are read for revival candidates and cached. Under load the site sometimes serves film pages without data: those are warned about and retried next run |
 
 - [ ] Read each site's terms and robots.txt
 - [ ] Ask cinemas directly for a feed (small repertory cinemas often welcome

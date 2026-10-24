@@ -20,13 +20,22 @@ class Result:
     error: str | None = None
 
 
-def films_to_look_up(conn: sqlite3.Connection, now: datetime) -> dict[tuple[str, int], tuple[str, str | None]]:
-    """Distinct upcoming revivals with a year: key -> (title, director)."""
+@dataclass(frozen=True)
+class FilmToLookUp:
+    title: str
+    director: str | None
+    original_title: str | None
+
+
+def films_to_look_up(conn: sqlite3.Connection, now: datetime) -> dict[tuple[str, int], FilmToLookUp]:
+    """Distinct upcoming revivals with a year, keyed like film_matches."""
     films = {}
     for s in db.latest_screenings(conn):
         if s.year is None or s.start < now or not is_revival(s, now.date()):
             continue
-        films.setdefault((db.title_key(s.title), s.year), (s.title, s.director))
+        films.setdefault(
+            (db.title_key(s.title), s.year), FilmToLookUp(s.title, s.director, s.original_title)
+        )
     return films
 
 
@@ -41,7 +50,8 @@ def enrich(
     now = now or datetime.now(timezone.utc)
     cached = db.film_matches(conn)
     result = Result()
-    for key, (title, director) in films_to_look_up(conn, now).items():
+    for key, film in films_to_look_up(conn, now).items():
+        title = film.title
         row = cached.get(key)
         if row and (
             row["imdb_id"]
@@ -53,7 +63,7 @@ def enrich(
             result.cached += 1
             continue
         try:
-            match = find_film(client, title, key[1], director)
+            match = find_film(client, title, key[1], film.director, film.original_title)
         except OmdbError as exc:  # bad key or daily limit: keep what we have
             result.error = str(exc)
             break

@@ -100,7 +100,9 @@ def test_adapter_reads_film_page_only_when_year_is_missing():
         "https://babylonberlin.eu/programm": fixture("programm.html"),
         strangelove: fixture("dr-strangelove.html"),
     })
-    screenings = BabylonAdapter().fetch(fetcher)
+    programme = BabylonAdapter().fetch(fetcher)
+    assert [c.name for c in programme.cinemas] == ["Babylon Mitte"]
+    screenings = programme.screenings
     s = next(s for s in screenings if "Strangelove" in s.title)
     assert (s.year, s.language) == (1964, "OmU")
     # Exorcist, Shining etc. already have a year: no extra requests for them.

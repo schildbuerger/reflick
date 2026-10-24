@@ -10,7 +10,7 @@ from datetime import date, datetime, time, timedelta
 
 from bs4 import BeautifulSoup, Tag
 
-from reflick.adapters.base import BERLIN, Adapter, Fetcher, clean
+from reflick.adapters.base import BERLIN, Adapter, Cache, Fetcher, Programme, clean
 from reflick.models import Cinema, RawScreening
 
 BASE_URL = "https://lichtblick-kino.org"
@@ -138,11 +138,11 @@ def parse_film_page(html: str, url: str, today: date) -> list[RawScreening]:
 
 
 class LichtblickAdapter(Adapter):
-    cinema = CINEMA
+    id = "lichtblick"
 
-    def fetch(self, fetcher: Fetcher) -> list[RawScreening]:
+    def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
         today = date.today()
         screenings: list[RawScreening] = []
         for url in parse_programme(fetcher.get(PROGRAMME_URL)):
             screenings.extend(parse_film_page(fetcher.get(url), url, today))
-        return screenings
+        return Programme(cinemas=[CINEMA], screenings=screenings)

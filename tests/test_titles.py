@@ -18,6 +18,7 @@ from reflick.titles import display_title, split_addons
         ("The Answering Machine: Premiere with Guests!", ("The Answering Machine", ["Premiere with Guests!"])),
         ("Becoming Kim - mit Gästen!", ("Becoming Kim", ["Mit Gästen!"])),
         ("BERLATIN Premiere: ALBUM DE FAMILIA", ("ALBUM DE FAMILIA", ["Berlatin Premiere"])),
+        ("The Killer (1989)", ("The Killer", [])),
     ],
 )
 def test_addons_become_badges(title, expected):

@@ -3,6 +3,8 @@
 import re
 import time
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import timedelta
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 from zoneinfo import ZoneInfo
@@ -55,10 +57,29 @@ class Fetcher:
         return self._robots[origin].can_fetch(USER_AGENT, url)
 
 
-class Adapter(ABC):
-    """Scrapes one cinema's programme into RawScreenings."""
+class Cache:
+    """What adapters see of reflick.db.Cache; this no-op version caches nothing."""
 
-    cinema: Cinema
+    def get(self, namespace: str, key: str, max_age: timedelta) -> dict | None:
+        return None
+
+    def set(self, namespace: str, key: str, value: dict) -> None:
+        pass
+
+
+@dataclass
+class Programme:
+    """One source's result: its cinemas and their screenings."""
+
+    cinemas: list[Cinema]
+    screenings: list[RawScreening]
+    warnings: list[str] = field(default_factory=list)
+
+
+class Adapter(ABC):
+    """Scrapes one source (a cinema, or a group like Yorck) into RawScreenings."""
+
+    id: str
 
     @abstractmethod
-    def fetch(self, fetcher: Fetcher) -> list[RawScreening]: ...
+    def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme: ...

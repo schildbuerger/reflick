@@ -56,7 +56,8 @@ class OmdbClient:
         if data.get("Response") == "True":
             return data
         error = data.get("Error", "")
-        if "not found" in error.lower():
+        # "Too many results" answers a search for a very short title: no usable match.
+        if "not found" in error.lower() or "too many results" in error.lower():
             return None
         raise OmdbError(f"OMDb: {error}")
 
@@ -121,11 +122,27 @@ def title_variants(title: str) -> list[str]:
 
 
 def _acceptable(m: Match, year: int, director: str | None) -> bool:
-    return m.year is not None and abs(m.year - year) <= 1 and director_matches(director, m.director)
+    if m.year is None or abs(m.year - year) > 1:
+        return False
+    if director and not m.director:
+        # Entries without a director are mostly making-ofs, shorts or podcast
+        # episodes that share the title ("El laberinto del fauno: Detrás de...").
+        return False
+    return director_matches(director, m.director)
 
 
-def find_film(client: OmdbClient, title: str, year: int, director: str | None) -> Match | None:
-    for variant in title_variants(title):
+def find_film(
+    client: OmdbClient,
+    title: str,
+    year: int,
+    director: str | None,
+    original_title: str | None = None,
+) -> Match | None:
+    """original_title, when the cinema gives one, is tried first: OMDb knows
+    'The Apartment', not the German 'Das Appartement'."""
+    variants = title_variants(original_title) if original_title else []
+    variants += [v for v in title_variants(title) if v not in variants]
+    for variant in variants:
         # Best guess by exact title; its year may be the US release year.
         if (data := client.query(t=variant, type="movie")) and _acceptable(
             m := _match(data), year, director

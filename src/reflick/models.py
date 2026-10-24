@@ -33,3 +33,4 @@ class RawScreening:
     country: str | None = None
     director: str | None = None
     runtime_min: int | None = None
+    original_title: str | None = None  # e.g. "The Apartment" for "Das Appartement"

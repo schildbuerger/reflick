@@ -1,4 +1,4 @@
-"""Babylon, Rosa-Luxemburg-Straße 30, Mitte.
+"""Babylon Mitte, Rosa-Luxemburg-Straße 30 (not Yorck's Babylon Kreuzberg).
 
 The site has no structured data, but /programm lists every upcoming screening
 on one page as `<li class="mix ...">`, one per showing:
@@ -19,7 +19,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
 
-from reflick.adapters.base import BERLIN, Adapter, Fetcher, clean
+from reflick.adapters.base import BERLIN, Adapter, Cache, Fetcher, Programme, clean
 from reflick.models import Cinema, RawScreening
 
 BASE_URL = "https://babylonberlin.eu"
@@ -27,7 +27,7 @@ PROGRAMME_URL = f"{BASE_URL}/programm"
 
 CINEMA = Cinema(
     id="babylon",
-    name="Babylon",
+    name="Babylon Mitte",  # Yorck runs a separate "Babylon Kreuzberg"
     address="Rosa-Luxemburg-Straße 30, 10178 Berlin",
     neighbourhood="Mitte",
     website=BASE_URL,
@@ -161,9 +161,9 @@ def parse_film_page(html: str) -> dict:
 
 
 class BabylonAdapter(Adapter):
-    cinema = CINEMA
+    id = "babylon"
 
-    def fetch(self, fetcher: Fetcher) -> list[RawScreening]:
+    def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
         screenings = parse_programme(fetcher.get(PROGRAMME_URL))
         # Fill in credits the programme's cut-off text hides, one request per film.
         details: dict[str, dict] = {}
@@ -175,4 +175,4 @@ class BabylonAdapter(Adapter):
             for key, value in details[s.source_url].items():
                 if key == "language" or getattr(s, key) is None:
                     setattr(s, key, value)
-        return screenings
+        return Programme(cinemas=[CINEMA], screenings=screenings)

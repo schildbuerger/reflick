@@ -51,9 +51,29 @@ def test_us_release_year_one_off_is_accepted():
     assert len(client.calls) == 1
 
 
+def test_original_title_is_tried_first():
+    apartment = {
+        "Response": "True", "Title": "The Apartment", "Year": "1960", "imdbID": "tt0053604",
+        "Genre": "Comedy, Drama, Romance", "Director": "Billy Wilder",
+    }
+    client = fake_client(by_title({"The Apartment": apartment}))
+    match = find_film(client, "Das Appartement", 1960, "Billy Wilder", original_title="The Apartment")
+    assert match.title == "The Apartment"
+    assert client.calls[0]["t"] == "The Apartment"
+
+
 def test_wrong_director_is_rejected():
     client = fake_client(by_title({"Casablanca": CASABLANCA}))
     assert find_film(client, "Casablanca", 1942, "Someone Else") is None
+
+
+def test_match_without_director_is_rejected_when_cinema_names_one():
+    making_of = {
+        "Response": "True", "Title": "El laberinto del fauno: Detrás de las cámaras",
+        "Year": "2006", "imdbID": "tt1", "Genre": "Documentary, Short", "Director": "N/A",
+    }
+    client = fake_client(by_title({"El laberinto del fauno": making_of}))
+    assert find_film(client, "Pans Labyrinth", 2006, "Guillermo del Toro", "El laberinto del fauno") is None
 
 
 def test_year_too_far_off_is_rejected():
@@ -82,6 +102,11 @@ def test_search_fallback_checks_candidate_details():
 
     match = find_film(fake_client(answer), "Former East / Former West", 1994, "Shelly Silver")
     assert match.genres == ["Documentary"]
+
+
+def test_too_many_results_is_a_miss_not_an_error():
+    client = fake_client(lambda p: {"Response": "False", "Error": "Too many results."})
+    assert client.query(s="It", y=1990) is None
 
 
 def test_api_errors_do_not_leak_the_key():

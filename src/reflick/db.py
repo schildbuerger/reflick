@@ -1,9 +1,13 @@
-"""SQLite storage. Every scrape run is kept as a snapshot of raw screenings."""
+"""SQLite storage. Every scrape run is kept as a snapshot of raw screenings.
+
+A run belongs to a source (one adapter), which may cover several cinemas,
+e.g. all Yorck cinemas come from the "yorck" source.
+"""
 
 import json
 import sqlite3
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from reflick.models import Cinema, RawScreening
@@ -18,7 +22,7 @@ CREATE TABLE IF NOT EXISTS cinemas (
 );
 CREATE TABLE IF NOT EXISTS runs (
     id INTEGER PRIMARY KEY,
-    cinema_id TEXT NOT NULL REFERENCES cinemas(id),
+    source TEXT NOT NULL,  -- adapter id
     started_at TEXT NOT NULL,
     finished_at TEXT,
     status TEXT NOT NULL,  -- running | ok | empty | failed
@@ -38,9 +42,18 @@ CREATE TABLE IF NOT EXISTS raw_screenings (
     year INTEGER,
     country TEXT,
     director TEXT,
-    runtime_min INTEGER
+    runtime_min INTEGER,
+    original_title TEXT
 );
 CREATE INDEX IF NOT EXISTS raw_screenings_run ON raw_screenings(run_id);
+-- Parsed detail pages adapters don't need to fetch every day (e.g. film credits).
+CREATE TABLE IF NOT EXISTS page_cache (
+    namespace TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,  -- JSON
+    fetched_at TEXT NOT NULL,
+    PRIMARY KEY (namespace, key)
+);
 -- OMDb lookups by (casefolded title, cinema's year). imdb_id is NULL when
 -- nothing matched; such misses are retried after a while.
 CREATE TABLE IF NOT EXISTS film_matches (
@@ -59,12 +72,50 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Bring databases created by earlier versions up to SCHEMA."""
+    if "cinema_id" in _columns(conn, "runs"):  # runs were per cinema before Yorck
+        conn.execute("ALTER TABLE runs RENAME COLUMN cinema_id TO source")
+    if "original_title" not in _columns(conn, "raw_screenings"):
+        conn.execute("ALTER TABLE raw_screenings ADD COLUMN original_title TEXT")
+    conn.commit()
+
+
 def connect(path: Path) -> sqlite3.Connection:
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    _migrate(conn)
     return conn
+
+
+class Cache:
+    """JSON values by (namespace, key), e.g. ("yorck-film", slug) -> credits."""
+
+    def __init__(self, conn: sqlite3.Connection):
+        self.conn = conn
+
+    def get(self, namespace: str, key: str, max_age: timedelta) -> dict | None:
+        row = self.conn.execute(
+            "SELECT value, fetched_at FROM page_cache WHERE namespace = ? AND key = ?",
+            (namespace, key),
+        ).fetchone()
+        if row is None:
+            return None
+        age = datetime.now(timezone.utc) - datetime.fromisoformat(row["fetched_at"])
+        return json.loads(row["value"]) if age < max_age else None
+
+    def set(self, namespace: str, key: str, value: dict) -> None:
+        self.conn.execute(
+            "INSERT OR REPLACE INTO page_cache VALUES (?, ?, ?, ?)",
+            (namespace, key, json.dumps(value, ensure_ascii=False), _now()),
+        )
+        self.conn.commit()
 
 
 def upsert_cinema(conn: sqlite3.Connection, cinema: Cinema) -> None:
@@ -76,10 +127,10 @@ def upsert_cinema(conn: sqlite3.Connection, cinema: Cinema) -> None:
     )
 
 
-def start_run(conn: sqlite3.Connection, cinema_id: str) -> int:
+def start_run(conn: sqlite3.Connection, source: str) -> int:
     cur = conn.execute(
-        "INSERT INTO runs (cinema_id, started_at, status) VALUES (?, ?, 'running')",
-        (cinema_id, _now()),
+        "INSERT INTO runs (source, started_at, status) VALUES (?, ?, 'running')",
+        (source, _now()),
     )
     conn.commit()
     return cur.lastrowid
@@ -107,9 +158,11 @@ def save_screenings(
         rows.append(row)
     conn.executemany(
         "INSERT INTO raw_screenings (run_id, cinema_id, title, start, source_url, "
-        "ticket_url, language, series, tags, year, country, director, runtime_min) "
+        "ticket_url, language, series, tags, year, country, director, runtime_min, "
+        "original_title) "
         "VALUES (:run_id, :cinema_id, :title, :start, :source_url, :ticket_url, "
-        ":language, :series, :tags, :year, :country, :director, :runtime_min)",
+        ":language, :series, :tags, :year, :country, :director, :runtime_min, "
+        ":original_title)",
         rows,
     )
     conn.commit()
@@ -169,12 +222,12 @@ def last_update(conn: sqlite3.Connection) -> datetime | None:
 
 
 def latest_screenings(conn: sqlite3.Connection) -> list[RawScreening]:
-    """Screenings from each cinema's most recent successful run."""
+    """Screenings from each source's most recent successful run."""
     rows = conn.execute(
         """
         SELECT s.* FROM raw_screenings s
         WHERE s.run_id IN (
-            SELECT MAX(id) FROM runs WHERE status = 'ok' GROUP BY cinema_id
+            SELECT MAX(id) FROM runs WHERE status = 'ok' GROUP BY source
         )
         ORDER BY s.start
         """
@@ -193,6 +246,7 @@ def latest_screenings(conn: sqlite3.Connection) -> list[RawScreening]:
             country=r["country"],
             director=r["director"],
             runtime_min=r["runtime_min"],
+            original_title=r["original_title"],
         )
         for r in rows
     ]

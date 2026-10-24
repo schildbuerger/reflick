@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -31,29 +32,41 @@ def load_dotenv(path: Path = Path(".env")) -> None:
 def scrape(args: argparse.Namespace) -> int:
     conn = db.connect(args.db)
     fetcher = Fetcher()
-    cinema_ids = args.cinema or list(ADAPTERS)
+    cache = db.Cache(conn)
     problems = 0
-    for cinema_id in cinema_ids:
-        adapter = ADAPTERS[cinema_id]()
-        db.upsert_cinema(conn, adapter.cinema)
-        run_id = db.start_run(conn, cinema_id)
+    for source in args.source or list(ADAPTERS):
+        adapter = ADAPTERS[source]()
+        run_id = db.start_run(conn, source)
         try:
-            screenings = adapter.fetch(fetcher)
-        except Exception as exc:  # one broken cinema must not stop the others
+            programme = adapter.fetch(fetcher, cache)
+        except Exception as exc:  # one broken source must not stop the others
             db.finish_run(conn, run_id, "failed", repr(exc))
-            print(f"{cinema_id}: FAILED: {exc!r}", file=sys.stderr)
+            print(f"{source}: FAILED: {exc!r}", file=sys.stderr)
             problems += 1
             continue
+        for cinema in programme.cinemas:
+            db.upsert_cinema(conn, cinema)
+        screenings = programme.screenings
         db.save_screenings(conn, run_id, screenings)
+        for warning in programme.warnings:
+            print(f"{source}: WARNING: {warning}", file=sys.stderr)
+            problems += 1
         if not screenings:
             # A scraper that suddenly finds nothing has most likely broken.
             db.finish_run(conn, run_id, "empty")
-            print(f"{cinema_id}: WARNING: 0 screenings", file=sys.stderr)
+            print(f"{source}: WARNING: 0 screenings", file=sys.stderr)
             problems += 1
             continue
         db.finish_run(conn, run_id, "ok")
+        # In a group, one cinema going quiet can mean it was renamed in the data.
+        per_cinema = Counter(s.cinema_id for s in screenings)
+        for cinema in programme.cinemas:
+            if not per_cinema[cinema.id]:
+                print(f"{source}: WARNING: 0 screenings at {cinema.name}", file=sys.stderr)
+                problems += 1
         revivals = sum(is_revival(s) for s in screenings)
-        print(f"{cinema_id}: {len(screenings)} screenings, {revivals} revivals")
+        where = f" at {len(per_cinema)} cinemas" if len(programme.cinemas) > 1 else ""
+        print(f"{source}: {len(screenings)} screenings{where}, {revivals} revivals")
     # Rebuild even if a cinema failed: the site falls back to its last good run.
     if not args.no_build:
         enrich_films(args)
@@ -95,7 +108,7 @@ def list_screenings(args: argparse.Namespace) -> int:
             continue
         facts = ", ".join(str(f) for f in (s.country, s.year, s.director) if f)
         lang = f" ({s.language})" if s.language else ""
-        line = f"{s.start:%a %d.%m. %H:%M}  {s.cinema_id:<12} {s.title}{lang}"
+        line = f"{s.start:%a %d.%m. %H:%M}  {s.cinema_id:<30} {s.title}{lang}"
         print(f"{line}  [{facts}]" if facts else line)
     return 0
 
@@ -109,7 +122,10 @@ def main(argv: list[str] | None = None) -> int:
     p_scrape = sub.add_parser(
         "scrape", help="fetch programmes, look up genres, then rebuild the site"
     )
-    p_scrape.add_argument("--cinema", action="append", choices=sorted(ADAPTERS))
+    p_scrape.add_argument(
+        "--source", action="append", choices=sorted(ADAPTERS),
+        help="only scrape this source (a cinema or group); repeatable",
+    )
     p_scrape.add_argument(
         "--no-build", action="store_true", help="skip the genre lookup and site build"
     )
