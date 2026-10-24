@@ -1,0 +1,143 @@
+{
+ "content": {
+  "colPos0": [
+   {
+    "colPos": 0,
+    "content": {
+     "data": {
+      "form": {
+       "additionalFilters": [],
+       "pluginNamespace": "tx_solr"
+      },
+      "facets": {
+       "main": [],
+       "right": []
+      },
+      "documents": {
+       "pagination": {
+        "current": 1,
+        "numberOfPages": 2
+       },
+       "list": {
+        "count": 5,
+        "results": [
+         {
+          "id": 41601,
+          "type": "movieIndex",
+          "dateText": "Sat 24.10. 17:00",
+          "indicesUrl": "/upcoming.json?tx_dreipcarsenal_upcoming%5Bevent%5D=5868&cHash=68f33cef65284f9710eb05a2f3acbac3",
+          "title": "Caravaggio",
+          "subtitle": "MHT – Production Design (2)",
+          "subtitleUrl": "/kino/filmreihe/mht/",
+          "teaser": null,
+          "image": null,
+          "url": "/kino/filmvorfuehrung/caravaggio-5868/",
+          "movieTitles": [
+           "Caravaggio"
+          ],
+          "director": "Derek Jarman",
+          "country": "UK",
+          "year": "1986",
+          "filmFormat": "DCP",
+          "languageVersion": "OmdU",
+          "playingTime": "93 Min.",
+          "location": [
+           "Arsenal"
+          ],
+          "salesUrl": "https://kinotickets.express/arsenal-berlin/booking/9726",
+          "icsUrl": "/kino/filmvorfuehrung/icalendar/caravaggio-5868/calendar.ics",
+          "isCompactLayout": false
+         },
+         {
+          "id": 41662,
+          "type": "movieIndex",
+          "dateText": "Sun 25.10. 14:30",
+          "indicesUrl": "/upcoming.json?tx_dreipcarsenal_upcoming%5Bevent%5D=5913&cHash=dd97b0f725d21dcf128cae81a05440fb",
+          "title": "Finding Norma",
+          "subtitle": "feminist elsewheres – Finding Norma: Film- und Videoarbeiten von Norma Bahia Pontes",
+          "subtitleUrl": "/kino/filmreihe/feminist-elsewheres-finding-norma-film-und-videoarbeiten-von-norma-bahia-pontes/",
+          "teaser": null,
+          "image": null,
+          "url": "/kino/filmvorfuehrung/finding-norma-5913/",
+          "movieTitles": [
+           "Finding Norma"
+          ],
+          "director": "Lívia Perez",
+          "country": "USA",
+          "year": "2023",
+          "filmFormat": null,
+          "languageVersion": null,
+          "playingTime": null,
+          "location": [
+           "Arsenal-Foyer"
+          ],
+          "salesUrl": null,
+          "icsUrl": "/kino/filmvorfuehrung/icalendar/finding-norma-5913/calendar.ics",
+          "isCompactLayout": false
+         },
+         {
+          "id": 42043,
+          "type": "movieIndex",
+          "dateText": "So. 01.11. 17:00",
+          "indicesUrl": "/upcoming.json?tx_dreipcarsenal_upcoming%5Bevent%5D=5941&cHash=64332a384803ea7f8c9c489dc16d8952",
+          "title": "De cierta manera",
+          "subtitle": "Magical History Tour –  Von Mikrokosmen und Modellen",
+          "subtitleUrl": "/kino/filmreihe/magical-history-tour-von-mikrokosmen-und-modellen/",
+          "teaser": null,
+          "image": null,
+          "url": "/kino/filmvorfuehrung/de-cierta-manera-5941/",
+          "movieTitles": [
+           "De cierta manera"
+          ],
+          "director": "Sara Gómez",
+          "country": "Kuba",
+          "year": "1974",
+          "filmFormat": "35 mm",
+          "languageVersion": "OmeU",
+          "playingTime": "74 Min.",
+          "location": [
+           "Arsenal"
+          ],
+          "salesUrl": "https://kinotickets.express/arsenal-berlin/booking/9746",
+          "icsUrl": "/kino/filmvorfuehrung/icalendar/de-cierta-manera-5941/calendar.ics",
+          "isCompactLayout": false
+         },
+         {
+          "id": 42055,
+          "type": "movieIndex",
+          "dateText": "Wed 04.11. 19:30",
+          "indicesUrl": "/upcoming.json?tx_dreipcarsenal_upcoming%5Bevent%5D=5946&cHash=ab1315585d74f253b46edba9bad55e3b",
+          "title": "Filme von Ken Jacobs",
+          "subtitle": "I Walked Into My ­Shortcomings: Buchpräsentation und Hommage an Ken und Flo Jacobs",
+          "subtitleUrl": "/kino/filmreihe/i-walked-into-my-shortcomings-buchpraesentation-und-hommage-an-ken-und-flo-jacobs/",
+          "teaser": null,
+          "image": null,
+          "url": "/kino/filmvorfuehrung/filme-von-ken-jacobs-5946/",
+          "movieTitles": [
+           "Filme von Ken Jacobs"
+          ],
+          "director": null,
+          "country": null,
+          "year": null,
+          "filmFormat": null,
+          "languageVersion": null,
+          "playingTime": null,
+          "location": [
+           "Arsenal"
+          ],
+          "salesUrl": "https://kinotickets.express/arsenal-berlin/booking/9750",
+          "icsUrl": "/kino/filmvorfuehrung/icalendar/filme-von-ken-jacobs-5946/calendar.ics",
+          "isCompactLayout": false
+         }
+        ]
+       }
+      },
+      "allResultCount": 5,
+      "currentSearch": "/api/v1/search/calendar/",
+      "arguments": null
+     }
+    }
+   }
+  ]
+ }
+}

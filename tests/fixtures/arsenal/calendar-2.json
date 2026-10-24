@@ -1,0 +1,62 @@
+{
+ "content": {
+  "colPos0": [
+   {
+    "colPos": 0,
+    "content": {
+     "data": {
+      "form": {
+       "additionalFilters": [],
+       "pluginNamespace": "tx_solr"
+      },
+      "facets": {
+       "main": [],
+       "right": []
+      },
+      "documents": {
+       "pagination": {
+        "current": 2,
+        "numberOfPages": 2
+       },
+       "list": {
+        "count": 5,
+        "results": [
+         {
+          "id": 41607,
+          "type": "movieIndex",
+          "dateText": "Sun 25.10. 14:30",
+          "indicesUrl": "/upcoming.json?tx_dreipcarsenal_upcoming%5Bevent%5D=5872&cHash=3d138652b3bddf9395eda61070ecddcd",
+          "title": "Der rote Ballon",
+          "subtitle": "Daumenkino – Kinderprogramm",
+          "subtitleUrl": "/kino/filmreihe/daumenkino/",
+          "teaser": null,
+          "image": null,
+          "url": "/kino/filmvorfuehrung/der-rote-ballon-5872/",
+          "movieTitles": [
+           "Der rote Ballon"
+          ],
+          "director": "Albert Lamorisse",
+          "country": "Frankreich",
+          "year": "1956",
+          "filmFormat": "35 mm",
+          "languageVersion": "Ohne Dialog",
+          "playingTime": "34 Min.",
+          "location": [
+           "Arsenal"
+          ],
+          "salesUrl": "https://kinotickets.express/arsenal-berlin/booking/9728",
+          "icsUrl": "/kino/filmvorfuehrung/icalendar/der-rote-ballon-5872/calendar.ics",
+          "isCompactLayout": false
+         }
+        ]
+       }
+      },
+      "allResultCount": 5,
+      "currentSearch": "/api/v1/search/calendar/",
+      "arguments": null
+     }
+    }
+   }
+  ]
+ }
+}

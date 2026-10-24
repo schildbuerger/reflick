@@ -48,10 +48,11 @@ python3 -m venv .venv
 .venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
 
-Cinemas covered so far: Babylon Mitte, Hackesche Höfe Kino, Lichtblick-Kino,
-and the 14 Yorck cinemas (Babylon Kreuzberg, Blauer Stern, Capitol Dahlem,
-Cinema Paris, Delphi Filmpalast, delphi LUX, Filmtheater am Friedrichshain,
-Kant Kino, Kino International, Neues Off, Odeon, Passage, Rollberg, Yorck).
+Cinemas covered so far: Arsenal, Babylon Mitte, Hackesche Höfe Kino,
+Lichtblick-Kino, Zeughauskino, and the 14 Yorck cinemas (Babylon Kreuzberg,
+Blauer Stern, Capitol Dahlem, Cinema Paris, Delphi Filmpalast, delphi LUX,
+Filmtheater am Friedrichshain, Kant Kino, Kino International, Neues Off,
+Odeon, Passage, Rollberg, Yorck).
 
 Yorck's film pages (year, director, original title) are only read for
 films that may be revivals, and cached for 30 days in the `page_cache`
