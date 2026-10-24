@@ -1,0 +1,20 @@
+{# One screening row. Expects `item`, `root`, `show_title` (bool) and
+   `filterable` (bool: row is shown or hidden by the index page filters). #}
+{% set s = item.screening %}
+<div class="screening"{% if filterable %} x-show="visible.has({{ item.id }})"{% endif %}>
+  <time datetime="{{ item.start.isoformat() }}">{{ item.time_label }}</time>
+  <div>
+    {% if show_title %}
+    <h3><a href="{{ root }}film/{{ item.film_slug }}/">{{ s.title }}</a></h3>
+    {% if item.facts %}<p class="muted">{{ item.facts }}</p>{% endif %}
+    {% endif %}
+    <p>
+      <a href="{{ s.source_url }}" class="secondary">{{ item.cinema.name }}</a>
+      {% if s.language %}<span class="badge">{{ s.language }}</span>{% endif %}
+      {% for label in item.labels %}<span class="badge label">{{ label }}</span>{% endfor %}
+    </p>
+  </div>
+  {% if s.ticket_url %}
+  <a class="tickets" role="button" href="{{ s.ticket_url }}" target="_blank" rel="noopener">Tickets</a>
+  {% endif %}
+</div>

@@ -45,11 +45,38 @@ scrape run is stored as a snapshot in a local SQLite database
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest
-.venv/bin/reflick scrape          # fetch all cinemas
-.venv/bin/reflick list --days 14  # upcoming revivals (--all for everything)
+.venv/bin/reflick scrape          # fetch all cinemas, then rebuild the site
+.venv/bin/reflick build           # rebuild the site from the database only
+.venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
 
 Cinemas covered so far: Lichtblick-Kino.
+
+### Website
+
+`reflick build` (also run at the end of every `scrape`) writes a static site
+to `site/`:
+
+- `index.html`: all upcoming revivals by day, with search, cinema and
+  language filters. Late shows after midnight are listed under the evening
+  before (e.g. 24:00), as cinemas do.
+- `film/<slug>/`: one page per film with all its screenings.
+- `reflick.ics`: a calendar feed to subscribe to.
+
+Templates live in `src/reflick/templates/` (Jinja2). Styling comes from
+[Pico CSS](https://picocss.com/) and the filters use
+[Alpine.js](https://alpinejs.dev/), both loaded from a CDN, so there is no
+JavaScript build step. Every screening is plain HTML; Alpine only hides rows
+that don't match, so the page works without JavaScript too.
+
+To preview locally:
+
+```bash
+python3 -m http.server 8000 --directory site
+```
+
+Then open http://localhost:8000. The folder can be deployed as-is to any
+static host.
 
 ## Open decisions
 

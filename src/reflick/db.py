@@ -104,6 +104,17 @@ def save_screenings(
     conn.commit()
 
 
+def cinemas(conn: sqlite3.Connection) -> dict[str, Cinema]:
+    rows = conn.execute("SELECT * FROM cinemas ORDER BY name").fetchall()
+    return {r["id"]: Cinema(**dict(r)) for r in rows}
+
+
+def last_update(conn: sqlite3.Connection) -> datetime | None:
+    """When the most recent successful run finished."""
+    value = conn.execute("SELECT MAX(finished_at) FROM runs WHERE status = 'ok'").fetchone()[0]
+    return datetime.fromisoformat(value) if value else None
+
+
 def latest_screenings(conn: sqlite3.Connection) -> list[RawScreening]:
     """Screenings from each cinema's most recent successful run."""
     rows = conn.execute(

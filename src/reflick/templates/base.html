@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}reflick – revival screenings in Berlin{% endblock %}</title>
+  <meta name="description" content="Classics, restorations and re-releases in Berlin cinemas, collected in one place.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
+  <link rel="alternate" type="text/calendar" title="reflick calendar" href="{{ root }}reflick.ics">
+  <style>
+    :root { --pico-font-size: 100%; }
+    header.site { padding-block: 1.5rem 0.5rem; }
+    header.site h1 { margin: 0; font-size: 1.75rem; }
+    header.site h1 a { text-decoration: none; color: inherit; }
+    header.site p { margin: 0; color: var(--pico-muted-color); }
+    .filters { display: grid; gap: 0.5rem; grid-template-columns: 2fr 1fr 1fr; margin-block: 1rem; }
+    .filters > * { margin: 0; }
+    .day h2 {
+      position: sticky; top: 0; z-index: 1;
+      margin: 0; padding-block: 0.75rem 0.5rem;
+      background: var(--pico-background-color);
+      font-size: 1.05rem;
+      border-bottom: 1px solid var(--pico-muted-border-color);
+    }
+    .screening {
+      display: grid; grid-template-columns: 3.5rem 1fr auto; gap: 0.75rem; align-items: start;
+      padding-block: 0.75rem;
+      border-bottom: 1px solid var(--pico-muted-border-color);
+    }
+    .screening time { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .screening h3 { margin: 0; font-size: 1rem; }
+    .screening p { margin: 0.15rem 0 0; font-size: 0.875rem; }
+    .muted { color: var(--pico-muted-color); }
+    .badge {
+      display: inline-block; padding: 0 0.4rem; margin-right: 0.25rem;
+      border: 1px solid var(--pico-muted-border-color); border-radius: 0.25rem;
+      font-size: 0.75rem; white-space: nowrap;
+    }
+    .badge.label { border-color: var(--pico-primary-border); color: var(--pico-primary); }
+    .tickets { padding: 0.3rem 0.7rem; font-size: 0.8rem; margin: 0; }
+    footer.site { margin-block: 2rem; font-size: 0.8rem; color: var(--pico-muted-color); }
+    [x-cloak] { display: none !important; }
+    @media (max-width: 576px) {
+      .filters { grid-template-columns: 1fr 1fr; }
+      .filters input[type=search] { grid-column: 1 / -1; }
+      .screening { grid-template-columns: 3rem 1fr; }
+      .screening .tickets { grid-column: 2; justify-self: start; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="site container">
+    <h1><a href="{{ root }}">reflick</a></h1>
+    <p>Classics, restorations and re-releases in Berlin cinemas.</p>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site container">
+    <p>
+      Listings are collected from the cinemas' own programmes{% if cinemas %}
+      ({% for c in cinemas %}<a href="{{ c.website }}">{{ c.name }}</a>{{ ", " if not loop.last }}{% endfor %}){% endif %}.
+      Times can change, so check with the cinema before you go.
+      {% if updated %}Updated {{ updated.strftime("%d.%m.%Y, %H:%M") }}.{% endif %}
+    </p>
+    <p><a href="{{ root }}reflick.ics">Subscribe to the calendar (iCal)</a></p>
+  </footer>
+</body>
+</html>

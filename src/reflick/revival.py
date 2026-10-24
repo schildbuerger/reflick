@@ -18,9 +18,15 @@ REVIVAL_KEYWORDS = (
 )
 
 
+def revival_labels(screening: RawScreening) -> list[str]:
+    """The series name and tags that mark the screening as a re-release."""
+    texts = [screening.series or "", *screening.tags]
+    return [t for t in texts if any(kw in t.lower() for kw in REVIVAL_KEYWORDS)]
+
+
 def has_revival_label(screening: RawScreening) -> bool:
-    texts = [screening.title, screening.series or "", *screening.tags]
-    return any(kw in t.lower() for t in texts for kw in REVIVAL_KEYWORDS)
+    title = screening.title.lower()
+    return bool(revival_labels(screening)) or any(kw in title for kw in REVIVAL_KEYWORDS)
 
 
 def is_revival(screening: RawScreening, today: date | None = None) -> bool:

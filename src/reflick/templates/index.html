@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block head %}
+  {# The page lists every screening in plain HTML; Alpine only hides rows that
+     don't match the filters, so it still works without JavaScript. #}
+  <script type="application/json" id="rows">{{ rows | tojson }}</script>
+  <script>
+    document.addEventListener("alpine:init", () => {
+      const rows = JSON.parse(document.getElementById("rows").textContent);
+      Alpine.data("listing", () => ({
+        q: "",
+        cinema: "",
+        language: "",
+        visible: new Set(rows.map((r) => r.id)),
+        init() {
+          for (const key of ["q", "cinema", "language"]) this.$watch(key, () => this.update());
+        },
+        update() {
+          const q = this.q.trim().toLowerCase();
+          this.visible = new Set(
+            rows
+              .filter((r) => !this.cinema || r.cinema === this.cinema)
+              .filter((r) => !this.language || r.language === this.language)
+              .filter((r) => !q || r.text.includes(q))
+              .map((r) => r.id)
+          );
+        },
+        dayVisible(day) {
+          return rows.some((r) => r.day === day && this.visible.has(r.id));
+        },
+      }));
+    });
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div x-data="listing">
+  <form class="filters" role="search" x-cloak @submit.prevent>
+    <input type="search" x-model="q" placeholder="Search title or director" aria-label="Search title or director">
+    <select x-model="cinema" aria-label="Cinema">
+      <option value="">All cinemas</option>
+      {% for c in cinemas %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+    </select>
+    <select x-model="language" aria-label="Language">
+      <option value="">Any language</option>
+      {% for lang in languages %}<option value="{{ lang }}">{{ lang }}</option>{% endfor %}
+    </select>
+  </form>
+
+  {% if not days %}
+  <p>No upcoming revival screenings right now.</p>
+  {% endif %}
+
+  {% for day, items in days %}
+  <section class="day" x-show="dayVisible('{{ day.isoformat() }}')">
+    <h2>{{ day | day_name }}</h2>
+    {% for item in items %}
+    {% with show_title=true, filterable=true %}{% include "_screening.html" %}{% endwith %}
+    {% endfor %}
+  </section>
+  {% endfor %}
+
+  <p x-cloak x-show="visible.size === 0">No screenings match these filters.</p>
+</div>
+{% endblock %}
