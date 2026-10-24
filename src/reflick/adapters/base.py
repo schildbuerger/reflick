@@ -14,7 +14,8 @@ import httpx
 
 from reflick.models import Cinema, RawScreening
 
-USER_AGENT = "reflick/0.1 (+revival screenings aggregator for Berlin)"
+# With contact details, which Wikimedia requires and other sites appreciate.
+USER_AGENT = "reflick/0.1 (+https://github.com/schildbuerger/reflick; revival screenings aggregator for Berlin)"
 BERLIN = ZoneInfo("Europe/Berlin")
 
 
