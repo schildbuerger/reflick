@@ -65,6 +65,17 @@ CREATE TABLE IF NOT EXISTS film_matches (
     looked_up_at TEXT NOT NULL,
     PRIMARY KEY (title_key, year)
 );
+-- Wikidata lookups, keyed like film_matches. qid is NULL when nothing matched.
+CREATE TABLE IF NOT EXISTS film_titles (
+    title_key TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    qid TEXT,
+    title_de TEXT,
+    original_title TEXT,
+    imdb_id TEXT,
+    looked_up_at TEXT NOT NULL,
+    PRIMARY KEY (title_key, year)
+);
 """
 
 
@@ -222,24 +233,53 @@ def save_film_match(
     conn.commit()
 
 
+def film_titles(conn: sqlite3.Connection) -> dict[tuple[str, int], sqlite3.Row]:
+    rows = conn.execute("SELECT * FROM film_titles").fetchall()
+    return {(r["title_key"], r["year"]): r for r in rows}
+
+
+def save_film_titles(
+    conn: sqlite3.Connection,
+    title: str,
+    year: int,
+    qid: str | None,
+    title_de: str | None,
+    original_title: str | None,
+    imdb_id: str | None,
+) -> None:
+    conn.execute(
+        "INSERT OR REPLACE INTO film_titles VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (title_key(title), year, qid, title_de, original_title, imdb_id, _now()),
+    )
+    conn.commit()
+
+
 @dataclass(frozen=True)
 class FilmInfo:
-    """What OMDb confirmed about a film."""
+    """What OMDb and Wikidata confirmed about a film."""
 
-    title: str
+    title: str | None  # OMDb's (mostly English) title
     genres: list[str]
     imdb_id: str | None = None
+    title_de: str | None = None  # from Wikidata
+    original_title: str | None = None  # from Wikidata
 
 
 def film_info(conn: sqlite3.Connection) -> dict[tuple[str, int], FilmInfo]:
-    """Matched films, keyed like film_matches."""
-    return {
-        key: FilmInfo(
-            title=row["matched_title"], genres=json.loads(row["genres"]), imdb_id=row["imdb_id"]
+    """Films matched on OMDb or Wikidata, keyed like film_matches."""
+    omdb = {k: r for k, r in film_matches(conn).items() if r["imdb_id"]}
+    wiki = {k: r for k, r in film_titles(conn).items() if r["qid"]}
+    info = {}
+    for key in omdb.keys() | wiki.keys():
+        o, w = omdb.get(key), wiki.get(key)
+        info[key] = FilmInfo(
+            title=o["matched_title"] if o else None,
+            genres=json.loads(o["genres"]) if o else [],
+            imdb_id=(o and o["imdb_id"]) or (w and w["imdb_id"]) or None,
+            title_de=w["title_de"] if w else None,
+            original_title=w["original_title"] if w else None,
         )
-        for key, row in film_matches(conn).items()
-        if row["imdb_id"]
-    }
+    return info
 
 
 def cinemas(conn: sqlite3.Connection) -> dict[str, Cinema]:

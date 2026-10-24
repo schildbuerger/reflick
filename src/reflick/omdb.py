@@ -131,6 +131,11 @@ def _acceptable(m: Match, year: int, director: str | None) -> bool:
     return director_matches(director, m.director)
 
 
+def find_by_imdb_id(client: OmdbClient, imdb_id: str) -> Match | None:
+    data = client.query(i=imdb_id)
+    return _match(data) if data else None
+
+
 def find_film(
     client: OmdbClient,
     title: str,

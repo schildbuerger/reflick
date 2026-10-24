@@ -13,6 +13,7 @@ from reflick.adapters import ADAPTERS
 from reflick.adapters.base import Fetcher
 from reflick.omdb import OmdbClient
 from reflick.revival import is_revival
+from reflick.wikidata import WikidataClient
 
 DEFAULT_DB = Path("data/reflick.sqlite")
 DEFAULT_OUT = Path("site")
@@ -74,21 +75,27 @@ def scrape(args: argparse.Namespace) -> int:
     return 1 if problems else 0
 
 
+def _report(source: str, result: enrich.Result) -> int:
+    print(
+        f"{source}: {result.matched} matched, {result.missed} not found, "
+        f"{result.cached} cached ({result.requests} requests)"
+    )
+    if result.error:
+        print(f"{source}: stopped early: {result.error}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def enrich_films(args: argparse.Namespace) -> int:
+    conn = db.connect(args.db)
+    retry = getattr(args, "retry", False)  # only `enrich` has the flag
+    # Titles first: Wikidata's IMDb ids help OMDb find German-titled films.
+    status = _report("wikidata", enrich.enrich_titles(conn, WikidataClient(), retry_misses=retry))
     api_key = os.environ.get("OMDB_API_KEY")
     if not api_key:
         print("omdb: OMDB_API_KEY not set, skipping genre lookup", file=sys.stderr)
         return 1
-    retry = getattr(args, "retry", False)  # only `enrich` has the flag
-    result = enrich.enrich(db.connect(args.db), OmdbClient(api_key), retry_misses=retry)
-    print(
-        f"omdb: {result.matched} matched, {result.missed} not found, "
-        f"{result.cached} cached ({result.requests} requests)"
-    )
-    if result.error:
-        print(f"omdb: stopped early: {result.error}", file=sys.stderr)
-        return 1
-    return 0
+    return _report("omdb", enrich.enrich(conn, OmdbClient(api_key), retry_misses=retry)) or status
 
 
 def build(args: argparse.Namespace) -> int:
@@ -130,18 +137,20 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(required=True)
 
     p_scrape = sub.add_parser(
-        "scrape", help="fetch programmes, look up genres, then rebuild the site"
+        "scrape", help="fetch programmes, look up titles and genres, then rebuild the site"
     )
     p_scrape.add_argument(
         "--source", action="append", choices=sorted(ADAPTERS),
         help="only scrape this source (a cinema or group); repeatable",
     )
     p_scrape.add_argument(
-        "--no-build", action="store_true", help="skip the genre lookup and site build"
+        "--no-build", action="store_true", help="skip the title and genre lookup and the site build"
     )
     p_scrape.set_defaults(func=scrape)
 
-    p_enrich = sub.add_parser("enrich", help="look up genres on OMDb (needs OMDB_API_KEY)")
+    p_enrich = sub.add_parser(
+        "enrich", help="look up titles on Wikidata and genres on OMDb (needs OMDB_API_KEY)"
+    )
     p_enrich.add_argument(
         "--retry", action="store_true", help="look up films that weren't found before again"
     )

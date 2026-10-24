@@ -97,6 +97,7 @@
     }
     .screening time { font-variant-numeric: tabular-nums; font-weight: 600; }
     .screening h3 { margin: 0; font-size: 1rem; }
+    .screening .original-title { margin: 0; font-size: 0.85rem; font-style: italic; }
     .screening p { margin: 0.15rem 0 0; font-size: 0.875rem; }
     .muted { color: var(--pico-muted-color); }
     .letterboxd { display: inline-block; margin-left: 0.4rem; line-height: 1; opacity: 0.75; }
@@ -151,7 +152,8 @@
       Listings are collected from the cinemas' own programmes{% if cinemas %}
       ({% for c in cinemas %}<a href="{{ c.website }}">{{ c.name }}</a>{{ ", " if not loop.last }}{% endfor %}){% endif %}.
       Times can change, so check with the cinema before you go.
-      Genres from <a href="https://www.omdbapi.com/">OMDb</a> (CC BY-NC 4.0).
+      Titles from <a href="https://www.wikidata.org/">Wikidata</a> (CC0),
+      genres from <a href="https://www.omdbapi.com/">OMDb</a> (CC BY-NC 4.0).
       {% if updated %}Updated {{ updated.strftime("%d.%m.%Y, %H:%M") }}.{% endif %}
     </p>
     <p><a href="reflick.ics">Subscribe to the calendar (iCal)</a></p>

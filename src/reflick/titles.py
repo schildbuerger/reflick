@@ -60,10 +60,15 @@ def _fold(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", text.lower())
 
 
+def same_title(a: str, b: str) -> bool:
+    """Equal apart from case, accents, punctuation and spacing."""
+    return _fold(a) == _fold(b)
+
+
 def display_title(cinema_title: str, verified_title: str | None) -> str:
     """The title to show: OMDb's when it differs in substance (e.g. it drops
     'Chaplin's'), otherwise the cinema's, which keeps accents and spacing
     ('Cléo from 5 to 7' rather than OMDb's 'Cleo from 5 to 7')."""
-    if verified_title and _fold(verified_title) != _fold(cinema_title):
+    if verified_title and not same_title(verified_title, cinema_title):
         return verified_title
     return cinema_title

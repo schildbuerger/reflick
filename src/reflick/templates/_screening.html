@@ -5,6 +5,7 @@
   <time datetime="{{ item.start.isoformat() }}">{{ item.time_label }}</time>
   <div>
     <h3>{{ item.title }}</h3>
+    {% if item.original_title %}<p class="original-title muted">{{ item.original_title }}</p>{% endif %}
     {% if item.facts or item.genres or item.letterboxd_url %}
     <p class="muted">
       {{- item.facts }}{% if item.facts and item.genres %} · {% endif %}{{ item.genres | join(", ") -}}

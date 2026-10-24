@@ -41,9 +41,9 @@ a group, suddenly has no screenings, which usually means its site changed.
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest
-.venv/bin/reflick scrape          # fetch all sources, look up genres, rebuild the site
+.venv/bin/reflick scrape          # fetch all sources, look up titles and genres, rebuild the site
 .venv/bin/reflick scrape --source yorck  # just one source
-.venv/bin/reflick enrich          # only look up genres (--retry: re-check films not found)
+.venv/bin/reflick enrich          # only look up titles and genres (--retry: re-check films not found)
 .venv/bin/reflick build           # rebuild the site from the database only
 .venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
@@ -58,6 +58,26 @@ Yorck's film pages (year, director, original title) are only read for
 films that may be revivals, and cached for 30 days in the `page_cache`
 table, so a daily run makes about ten requests once the cache is warm.
 
+### Titles (Wikidata)
+
+Every listed revival gets its German title and its original title from
+[Wikidata](https://www.wikidata.org/), with no key needed. The site shows the
+German title, with the original underneath when it differs ("Uhrwerk Orange"
+/ "A Clockwork Orange"). A film is found by full-text search over all its
+titles, so German, original and English titles all work; a match must share a
+release year (±1) and, when the cinema names one, the director. Films OMDb
+already knows are looked up by their IMDb id. Results are cached in the
+`film_titles` table; films that weren't found are retried after a week.
+
+Wikidata's robots.txt disallows its API (`/w/`) for crawlers, but
+Wikimedia's [robot policy](https://wikitech.wikimedia.org/wiki/Robot_policy)
+has explicit rules for API use, which reflick follows: one request at a
+time, about one a second, and a User-Agent naming this repository. This is
+the only place that doesn't go through the robots.txt check; the SPARQL
+query service, which robots.txt also disallows, isn't used. The first run
+looks up every listed film (about two requests each), later runs only new
+ones.
+
 ### Genres (OMDb)
 
 Genres come from [OMDb](https://www.omdbapi.com/), which needs a free API
@@ -70,13 +90,14 @@ OMDB_API_KEY=your-key
 
 Without a key, scraping and the site still work, just without genres.
 
-Each listed revival is matched by title, accepting a year off by one (OMDb
-uses the US release year) and checking the director when the cinema names
-one. Results are cached in the `film_matches` table, so each film costs
-requests only once; films that weren't found are retried after a week.
-OMDb only knows English and original titles, so films listed under a German
-title (e.g. "Aguirre, der Zorn Gottes") usually get no genre. The site
-credits OMDb in the footer, as its CC BY-NC 4.0 licence requires.
+When Wikidata found the film's IMDb id, OMDb is asked for exactly that film.
+Otherwise it's matched by title (the cinema's, or the original from
+Wikidata), accepting a year off by one (OMDb uses the US release year) and
+checking the director when the cinema names one. Results are cached in the
+`film_matches` table, so each film costs requests only once; films that
+weren't found are retried after a week, or right away once Wikidata has
+found their IMDb id. The site credits OMDb in the footer, as its CC BY-NC
+4.0 licence requires, and Wikidata (CC0) alongside.
 
 ### Website
 

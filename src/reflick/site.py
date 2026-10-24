@@ -23,7 +23,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from reflick import db
 from reflick.models import Cinema, RawScreening
 from reflick.revival import is_revival, revival_labels
-from reflick.titles import display_title, split_addons
+from reflick.titles import display_title, same_title, split_addons
 
 BERLIN = ZoneInfo("Europe/Berlin")
 LEGAL_PAGES = ("impressum.html", "datenschutz.html")
@@ -45,10 +45,11 @@ class Item:
     screening: RawScreening
     cinema: Cinema
     start: datetime  # in Europe/Berlin
-    title: str  # film title without cinema add-ons, verified on OMDb if matched
+    title: str  # German title from Wikidata, else the cinema's without add-ons
     labels: list[str]  # series/re-release labels and title add-ons, shown as badges
     genres: list[str]  # from OMDb, empty if the film wasn't matched
-    imdb_id: str | None = None  # from OMDb, if matched
+    imdb_id: str | None = None  # from OMDb or Wikidata, if matched
+    original_title: str | None = None  # from Wikidata, only when it differs from title
 
     @property
     def letterboxd_url(self) -> str | None:
@@ -105,15 +106,18 @@ def make_item(
 ) -> Item:
     base_title, addons = split_addons(s.title)
     info = films.get((db.title_key(s.title), s.year)) if s.year else None
+    title = (info and info.title_de) or display_title(base_title, info.title if info else None)
+    original = info.original_title if info else None
     return Item(
         id=i,
         screening=s,
         cinema=cinemas[s.cinema_id],
         start=s.start.astimezone(BERLIN),
-        title=display_title(base_title, info.title if info else None),
+        title=title,
         labels=[*revival_labels(s), *addons],
         genres=info.genres if info else [],
         imdb_id=info.imdb_id if info else None,
+        original_title=original if original and not same_title(original, title) else None,
     )
 
 
@@ -227,8 +231,11 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
             "language": i.screening.language or "",
             "genres": i.genres,
             "text": " ".join(
-                # Both titles, so "Gold Rush" and "Orchester" both find the Chaplin show.
-                filter(None, (i.title, i.screening.title, i.screening.director, i.screening.series))
+                # All titles, so "Gold Rush" and "Orchester" both find the Chaplin show.
+                filter(None, (
+                    i.title, i.original_title, i.screening.title,
+                    i.screening.director, i.screening.series,
+                ))
             ).casefold(),
         }
         for i in items

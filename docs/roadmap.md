@@ -68,10 +68,10 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 ## 5. Film matching and enrichment
 
 - [x] Match films to OMDb for genres and IMDb ids, cached in `film_matches`
-- [~] German titles: Yorck's original titles now match (e.g. "Das
-      Appartement" → *The Apartment*). Babylon and Lichtblick give no original
-      title, so their German-titled films still mostly miss. Consider TMDB or
-      Wikidata as a second source
+- [x] German and original titles from Wikidata (no key), shown on the site
+      German first. Wikidata's IMDb ids let OMDb find German-titled films: in
+      a first run 96 of 102 films matched, and OMDb found 19 films it had
+      missed before
 - [x] Clean titles: language suffixes ("[OmU]"), series prefixes, cinema
       add-ons ("LIVE mit Babylon Orchester Berlin") shown as badges, trailing
       years
