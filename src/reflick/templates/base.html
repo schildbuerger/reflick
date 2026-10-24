@@ -8,16 +8,25 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
   <link rel="alternate" type="text/calendar" title="reflick calendar" href="reflick.ics">
   <style>
-    :root { --pico-font-size: 100%; }
+    :root {
+      --pico-font-size: 100%;
+      /* Pico's own form-control height, applied to every filter so they line up. */
+      --filter-height: calc(1rem * var(--pico-line-height) + var(--pico-form-element-spacing-vertical) * 2 + var(--pico-border-width) * 2);
+      --filter-bar-padding: 0.75rem;
+      /* Where day headers stick: right below the sticky filter bar. */
+      --sticky-top: calc(var(--filter-height) + var(--filter-bar-padding) * 2);
+    }
     header.site { padding-block: 1.5rem 0.5rem; }
     header.site h1 { margin: 0; font-size: 1.75rem; }
     header.site h1 a { text-decoration: none; color: inherit; }
     header.site p { margin: 0; color: var(--pico-muted-color); }
-    /* One row: search twice as wide as each select, however many selects there are. */
+    /* One row: search twice as wide as each select, however many selects there
+       are. Sticky, so the filters stay in view while scrolling the list. */
     .filters {
-      display: flex; gap: 0.5rem; margin-block: 1rem; align-items: center;
-      /* Pico's own form-control height, applied to every control so they line up. */
-      --filter-height: calc(1rem * var(--pico-line-height) + var(--pico-form-element-spacing-vertical) * 2 + var(--pico-border-width) * 2);
+      display: flex; gap: 0.5rem; align-items: center;
+      position: sticky; top: 0; z-index: 2;  /* above the sticky day headers */
+      margin-block: 0.25rem 0; padding-block: var(--filter-bar-padding);
+      background: var(--pico-background-color);
     }
     /* input:not([type=...]) because Pico's bottom margin on inputs uses that
        more specific selector and would otherwise make the row taller. */
@@ -34,7 +43,7 @@
     .filters .districts > ul { min-width: 12rem; }
     .filters .reset { flex: none; width: auto; padding-inline: 1rem; }
     .day h2 {
-      position: sticky; top: 0; z-index: 1;
+      position: sticky; top: var(--sticky-top); z-index: 1;
       margin: 0; padding-block: 0.75rem 0.5rem;
       background: var(--pico-background-color);
       font-size: 1.05rem;
@@ -64,7 +73,10 @@
     footer.site { margin-block: 2rem; font-size: 0.8rem; color: var(--pico-muted-color); }
     [x-cloak] { display: none !important; }
     @media (max-width: 576px) {
-      .filters { flex-wrap: wrap; }
+      /* Wrapped onto four rows, a sticky filter bar would cover half the
+         screen, so on phones it scrolls away and day headers stick at the top. */
+      .filters { flex-wrap: wrap; position: static; margin-block: 1rem; padding-block: 0; }
+      .day h2 { top: 0; }
       .filters input[type=search] { flex-basis: 100%; }
       .filters select, .filters .districts { flex-basis: 9rem; }  /* two rows of two on a 375px phone */
       .filters .reset { flex-basis: 100%; }
