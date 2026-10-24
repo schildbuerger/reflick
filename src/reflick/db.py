@@ -41,6 +41,17 @@ CREATE TABLE IF NOT EXISTS raw_screenings (
     runtime_min INTEGER
 );
 CREATE INDEX IF NOT EXISTS raw_screenings_run ON raw_screenings(run_id);
+-- OMDb lookups by (casefolded title, cinema's year). imdb_id is NULL when
+-- nothing matched; such misses are retried after a while.
+CREATE TABLE IF NOT EXISTS film_matches (
+    title_key TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    imdb_id TEXT,
+    matched_title TEXT,
+    genres TEXT NOT NULL,  -- JSON list
+    looked_up_at TEXT NOT NULL,
+    PRIMARY KEY (title_key, year)
+);
 """
 
 
@@ -102,6 +113,40 @@ def save_screenings(
         rows,
     )
     conn.commit()
+
+
+def title_key(title: str) -> str:
+    return " ".join(title.casefold().split())
+
+
+def film_matches(conn: sqlite3.Connection) -> dict[tuple[str, int], sqlite3.Row]:
+    rows = conn.execute("SELECT * FROM film_matches").fetchall()
+    return {(r["title_key"], r["year"]): r for r in rows}
+
+
+def save_film_match(
+    conn: sqlite3.Connection,
+    title: str,
+    year: int,
+    imdb_id: str | None,
+    matched_title: str | None,
+    genres: list[str],
+) -> None:
+    conn.execute(
+        "INSERT OR REPLACE INTO film_matches VALUES (?, ?, ?, ?, ?, ?)",
+        (title_key(title), year, imdb_id, matched_title,
+         json.dumps(genres, ensure_ascii=False), _now()),
+    )
+    conn.commit()
+
+
+def genres_by_film(conn: sqlite3.Connection) -> dict[tuple[str, int], list[str]]:
+    """Genres of matched films, keyed like film_matches."""
+    return {
+        key: json.loads(row["genres"])
+        for key, row in film_matches(conn).items()
+        if row["imdb_id"]
+    }
 
 
 def cinemas(conn: sqlite3.Connection) -> dict[str, Cinema]:

@@ -1,19 +1,31 @@
-"""Command line: `reflick scrape`, `reflick build` and `reflick list`."""
+"""Command line: `reflick scrape`, `reflick enrich`, `reflick build` and `reflick list`."""
 
 import argparse
+import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from reflick import db, site
+from reflick import db, enrich, site
 from reflick.adapters import ADAPTERS
 from reflick.adapters.base import Fetcher
+from reflick.omdb import OmdbClient
 from reflick.revival import is_revival
 
 DEFAULT_DB = Path("data/reflick.sqlite")
 DEFAULT_OUT = Path("site")
 BERLIN = ZoneInfo("Europe/Berlin")
+
+
+def load_dotenv(path: Path = Path(".env")) -> None:
+    """Read KEY=value lines into the environment; real env vars win."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        key, sep, value = line.partition("=")
+        if sep and not key.strip().startswith("#"):
+            os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
 def scrape(args: argparse.Namespace) -> int:
@@ -44,8 +56,26 @@ def scrape(args: argparse.Namespace) -> int:
         print(f"{cinema_id}: {len(screenings)} screenings, {revivals} revivals")
     # Rebuild even if a cinema failed: the site falls back to its last good run.
     if not args.no_build:
+        enrich_films(args)
         build(args)
     return 1 if problems else 0
+
+
+def enrich_films(args: argparse.Namespace) -> int:
+    api_key = os.environ.get("OMDB_API_KEY")
+    if not api_key:
+        print("omdb: OMDB_API_KEY not set, skipping genre lookup", file=sys.stderr)
+        return 1
+    retry = getattr(args, "retry", False)  # only `enrich` has the flag
+    result = enrich.enrich(db.connect(args.db), OmdbClient(api_key), retry_misses=retry)
+    print(
+        f"omdb: {result.matched} matched, {result.missed} not found, "
+        f"{result.cached} cached ({result.requests} requests)"
+    )
+    if result.error:
+        print(f"omdb: stopped early: {result.error}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def build(args: argparse.Namespace) -> int:
@@ -76,10 +106,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="site output folder")
     sub = parser.add_subparsers(required=True)
 
-    p_scrape = sub.add_parser("scrape", help="fetch programmes, then rebuild the site")
+    p_scrape = sub.add_parser(
+        "scrape", help="fetch programmes, look up genres, then rebuild the site"
+    )
     p_scrape.add_argument("--cinema", action="append", choices=sorted(ADAPTERS))
-    p_scrape.add_argument("--no-build", action="store_true", help="skip the site build")
+    p_scrape.add_argument(
+        "--no-build", action="store_true", help="skip the genre lookup and site build"
+    )
     p_scrape.set_defaults(func=scrape)
+
+    p_enrich = sub.add_parser("enrich", help="look up genres on OMDb (needs OMDB_API_KEY)")
+    p_enrich.add_argument(
+        "--retry", action="store_true", help="look up films that weren't found before again"
+    )
+    p_enrich.set_defaults(func=enrich_films)
 
     p_build = sub.add_parser("build", help="render the static site from the database")
     p_build.set_defaults(func=build)
@@ -90,6 +130,7 @@ def main(argv: list[str] | None = None) -> int:
     p_list.set_defaults(func=list_screenings)
 
     args = parser.parse_args(argv)
+    load_dotenv()
     return args.func(args)
 
 

@@ -45,12 +45,33 @@ scrape run is stored as a snapshot in a local SQLite database
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest
-.venv/bin/reflick scrape          # fetch all cinemas, then rebuild the site
+.venv/bin/reflick scrape          # fetch all cinemas, look up genres, rebuild the site
+.venv/bin/reflick enrich          # only look up genres (--retry: re-check films not found)
 .venv/bin/reflick build           # rebuild the site from the database only
 .venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
 
 Cinemas covered so far: Babylon, Lichtblick-Kino.
+
+### Genres (OMDb)
+
+Genres come from [OMDb](https://www.omdbapi.com/), which needs a free API
+key (1,000 requests a day). Put it in a `.env` file in the project folder,
+which is gitignored:
+
+```
+OMDB_API_KEY=your-key
+```
+
+Without a key, scraping and the site still work, just without genres.
+
+Each listed revival is matched by title, accepting a year off by one (OMDb
+uses the US release year) and checking the director when the cinema names
+one. Results are cached in the `film_matches` table, so each film costs
+requests only once; films that weren't found are retried after a week.
+OMDb only knows English and original titles, so films listed under a German
+title (e.g. "Aguirre, der Zorn Gottes") usually get no genre. The site
+credits OMDb in the footer, as its CC BY-NC 4.0 licence requires.
 
 ### Website
 

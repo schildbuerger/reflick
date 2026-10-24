@@ -48,8 +48,10 @@ matching improves.
 
 ## 5. Film matching and enrichment
 
-- Match titles to TMDB or Wikidata for year, director and poster (check API
-  terms and attribution)
+- [x] Match titles to OMDb for genres and IMDb ids (cached in `film_matches`;
+      35 of 46 listed revivals matched on 2026-10-24)
+- [ ] German titles mostly don't match on OMDb: consider TMDB or Wikidata as a
+      second source for those
 - Clean titles: German vs. original titles, suffixes like "(OmU)" or
   "(35mm)", series prefixes
 - Manual review queue for uncertain matches

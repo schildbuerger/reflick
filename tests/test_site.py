@@ -75,6 +75,18 @@ def test_single_page_lists_screenings_across_cinemas(tmp_path):
     assert '<option value="lichtblick">Lichtblick-Kino</option>' in index
 
 
+def test_genres_from_omdb_are_shown_and_filterable(tmp_path):
+    conn = seeded_db(tmp_path)
+    db.save_film_match(conn, "Casablanca", 1942, "tt0034583", "Casablanca", ["Drama", "Romance"])
+    db.save_film_match(conn, "Trainspotting", 1996, None, None, [])  # looked up, no match
+    out = tmp_path / "site"
+    site.build(conn, out, now=NOW)
+    index = (out / "index.html").read_text(encoding="utf-8")
+    assert "Michael Curtiz · 102 min · Drama, Romance" in index
+    assert '<option value="Romance">Romance</option>' in index
+    assert '"genres": ["Drama", "Romance"]' in index
+
+
 def test_past_screenings_are_not_listed(tmp_path):
     later = datetime(2026, 10, 26, 12, 0, tzinfo=BERLIN)
     assert site.build(seeded_db(tmp_path), tmp_path / "site", now=later) == 0

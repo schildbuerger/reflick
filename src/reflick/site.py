@@ -38,6 +38,7 @@ class Item:
     cinema: Cinema
     start: datetime  # in Europe/Berlin
     labels: list[str]
+    genres: list[str]  # from OMDb, empty if the film wasn't matched
 
     @property
     def programme_day(self) -> date:
@@ -73,7 +74,10 @@ def day_name(day: date) -> str:
 
 
 def collect(
-    screenings: list[RawScreening], cinemas: dict[str, Cinema], now: datetime
+    screenings: list[RawScreening],
+    cinemas: dict[str, Cinema],
+    genres: dict[tuple[str, int], list[str]],
+    now: datetime,
 ) -> list[Item]:
     """Upcoming revivals across all cinemas, in start order."""
     upcoming = sorted(
@@ -87,6 +91,7 @@ def collect(
             cinema=cinemas[s.cinema_id],
             start=s.start.astimezone(BERLIN),
             labels=revival_labels(s),
+            genres=genres.get((db.title_key(s.title), s.year), []) if s.year else [],
         )
         for i, s in enumerate(upcoming)
     ]
@@ -160,17 +165,19 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     """Write the site to out_dir. Returns the number of screenings listed."""
     now = now or datetime.now(BERLIN)
     cinemas = db.cinemas(conn)
-    items = collect(db.latest_screenings(conn), cinemas, now)
+    items = collect(db.latest_screenings(conn), cinemas, db.genres_by_film(conn), now)
     updated = db.last_update(conn)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     languages = sorted({i.screening.language for i in items if i.screening.language})
+    genres = sorted({g for i in items for g in i.genres})
     rows = [
         {
             "id": i.id,
             "day": i.programme_day.isoformat(),
             "cinema": i.cinema.id,
             "language": i.screening.language or "",
+            "genres": i.genres,
             "text": " ".join(
                 filter(None, (i.screening.title, i.screening.director, i.screening.series))
             ).casefold(),
@@ -180,6 +187,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     index = _environment().get_template("index.html").render(
         days=by_day(items),
         languages=languages,
+        genres=genres,
         rows=rows,
         cinemas=sorted({i.cinema for i in items}, key=lambda c: c.name),
         updated=updated.astimezone(BERLIN) if updated else None,

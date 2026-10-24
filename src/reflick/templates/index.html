@@ -11,9 +11,10 @@
         q: "",
         cinema: "",
         language: "",
+        genre: "",
         visible: new Set(rows.map((r) => r.id)),
         init() {
-          for (const key of ["q", "cinema", "language"]) this.$watch(key, () => this.update());
+          for (const key of ["q", "cinema", "language", "genre"]) this.$watch(key, () => this.update());
         },
         update() {
           const q = this.q.trim().toLowerCase();
@@ -21,6 +22,7 @@
             rows
               .filter((r) => !this.cinema || r.cinema === this.cinema)
               .filter((r) => !this.language || r.language === this.language)
+              .filter((r) => !this.genre || r.genres.includes(this.genre))
               .filter((r) => !q || r.text.includes(q))
               .map((r) => r.id)
           );
@@ -46,6 +48,12 @@
       <option value="">Any language</option>
       {% for lang in languages %}<option value="{{ lang }}">{{ lang }}</option>{% endfor %}
     </select>
+    {% if genres %}
+    <select x-model="genre" aria-label="Genre">
+      <option value="">Any genre</option>
+      {% for g in genres %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+    </select>
+    {% endif %}
   </form>
 
   {% if not days %}

@@ -4,7 +4,9 @@
   <time datetime="{{ item.start.isoformat() }}">{{ item.time_label }}</time>
   <div>
     <h3><a href="{{ s.source_url }}" target="_blank" rel="noopener">{{ s.title }}</a></h3>
-    {% if item.facts %}<p class="muted">{{ item.facts }}</p>{% endif %}
+    {% if item.facts or item.genres %}
+    <p class="muted">{{ item.facts }}{% if item.facts and item.genres %} · {% endif %}{{ item.genres | join(", ") }}</p>
+    {% endif %}
     <p>
       {{ item.cinema.name }}
       {% if s.language %}<span class="badge">{{ s.language }}</span>{% endif %}
