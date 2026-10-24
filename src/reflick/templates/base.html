@@ -18,6 +18,7 @@
     .filters > * { margin: 0; min-width: 0; }
     .filters input[type=search] { flex: 2 1 0; }
     .filters select { flex: 1 1 0; }
+    .filters .reset { flex: none; width: auto; padding-inline: 1rem; }
     .day h2 {
       position: sticky; top: 0; z-index: 1;
       margin: 0; padding-block: 0.75rem 0.5rem;
@@ -51,6 +52,7 @@
       .filters { flex-wrap: wrap; }
       .filters input[type=search] { flex-basis: 100%; }
       .filters select { flex-basis: 6rem; }  /* three selects still fit a 375px phone */
+      .filters .reset { flex-basis: 100%; }
       .screening { grid-template-columns: 3rem 1fr; }
     }
   </style>

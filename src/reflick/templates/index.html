@@ -27,6 +27,12 @@
               .map((r) => r.id)
           );
         },
+        get active() {
+          return Boolean(this.q || this.cinema || this.language || this.genre);
+        },
+        reset() {
+          this.q = this.cinema = this.language = this.genre = "";
+        },
         dayVisible(day) {
           return rows.some((r) => r.day === day && this.visible.has(r.id));
         },
@@ -54,6 +60,7 @@
       {% for g in genres %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
     </select>
     {% endif %}
+    <button type="button" class="reset secondary outline" @click="reset()" :disabled="!active">Reset</button>
   </form>
 
   {% if not days %}

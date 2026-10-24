@@ -50,6 +50,7 @@ def test_build_writes_index_film_pages_and_calendar(tmp_path):
     )
     assert f'<a class="cinema secondary" href="{maps}"' in index
     assert '<svg class="pin"' in index
+    assert '@click="reset()"' in index
 
     ics = (out / "reflick.ics").read_bytes().decode()
     assert ics.count("BEGIN:VEVENT") == 3
