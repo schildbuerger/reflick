@@ -13,21 +13,24 @@
       /* Pico's own form-control height, applied to every filter so they line up. */
       --filter-height: calc(1rem * var(--pico-line-height) + var(--pico-form-element-spacing-vertical) * 2 + var(--pico-border-width) * 2);
       --filter-bar-padding: 0.75rem;
-      /* Where day headers stick: right below the sticky filter bar. */
-      --sticky-top: calc(var(--filter-height) + var(--filter-bar-padding) * 2);
+      --day-strip-height: 2rem;
+      --day-strip-gap: 0.5rem;
+      /* Where day headers stick: right below the sticky filter bar (filters +
+         date strip). The page replaces this estimate with the bar's measured height. */
+      --sticky-top: calc(var(--filter-height) + var(--day-strip-gap) + var(--day-strip-height) + var(--filter-bar-padding) * 2);
     }
     header.site { padding-block: 1.5rem 0.5rem; }
     header.site h1 { margin: 0; font-size: 1.75rem; }
     header.site h1 a { text-decoration: none; color: inherit; }
     header.site p { margin: 0; color: var(--pico-muted-color); }
-    /* One row: search twice as wide as each dropdown, however many there are.
-       Sticky, so the filters stay in view while scrolling the list. */
-    .filters {
-      display: flex; gap: 0.5rem; align-items: center;
+    /* Filters and date strip, sticky so they stay in view while scrolling the list. */
+    .filterbar {
       position: sticky; top: 0; z-index: 2;  /* above the sticky day headers */
       margin-block: 0.25rem 0; padding-block: var(--filter-bar-padding);
       background: var(--pico-background-color);
     }
+    /* One row: search twice as wide as each dropdown, however many there are. */
+    .filters { display: flex; gap: 0.5rem; align-items: center; margin: 0; }
     /* input:not([type=...]) because Pico's bottom margin on inputs uses that
        more specific selector and would otherwise make the row taller. */
     .filters > *, .filters > input:not([type=checkbox], [type=radio]) { margin: 0; min-width: 0; }
@@ -48,6 +51,34 @@
       max-height: min(60vh, 24rem); overflow-y: auto; overflow-x: hidden;
     }
     .filters .reset { flex: none; width: auto; padding-inline: 1rem; }
+    /* Date strip: a horizontally scrolling row of day chips with arrow buttons. */
+    .daystrip {
+      display: flex; align-items: center; gap: 0.35rem;
+      height: var(--day-strip-height); margin-top: var(--day-strip-gap);
+    }
+    .daystrip .days {
+      display: flex; gap: 0.35rem; flex: 1; min-width: 0;
+      overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+    }
+    .daystrip .days::-webkit-scrollbar { display: none; }
+    /* Chips and arrows are <button>s; these override Pico's button look. */
+    .daystrip button {
+      flex: none; margin: 0; height: var(--day-strip-height);
+      border: 1px solid var(--pico-muted-border-color); border-radius: 1rem;
+      background: transparent; color: inherit; box-shadow: none;
+      font-size: 0.8rem; line-height: 1; white-space: nowrap;
+    }
+    .daystrip .chip { padding: 0 0.7rem; scroll-snap-align: start; }
+    .daystrip .chip small { margin-left: 0.3rem; color: var(--pico-muted-color); font-size: 0.75rem; }
+    .daystrip .chip:hover:not(:disabled) { border-color: var(--pico-primary-border); }
+    .daystrip .chip[aria-pressed=true] {
+      background: var(--pico-primary-background); border-color: var(--pico-primary-background);
+      color: var(--pico-primary-inverse);
+    }
+    .daystrip .chip[aria-pressed=true] small { color: inherit; opacity: 0.8; }
+    .daystrip .chip:disabled { opacity: 0.35; cursor: default; }
+    .daystrip .arrow { width: var(--day-strip-height); padding: 0; font-size: 1.1rem; }
+    .list { scroll-margin-top: var(--sticky-top); }
     .day h2 {
       position: sticky; top: var(--sticky-top); z-index: 1;
       margin: 0; padding: 0.6rem 0.75rem;
@@ -84,8 +115,11 @@
     @media (max-width: 576px) {
       /* Wrapped onto four rows, a sticky filter bar would cover half the
          screen, so on phones it scrolls away and day headers stick at the top. */
-      .filters { flex-wrap: wrap; position: static; margin-block: 1rem; padding-block: 0; }
+      .filterbar { position: static; margin-block: 1rem; padding-block: 0; }
+      .filters { flex-wrap: wrap; }
       .day h2 { top: 0; }
+      .list { scroll-margin-top: 0; }
+      .daystrip .arrow { display: none; }  /* swipe the strip instead */
       .filters input[type=search] { flex-basis: 100%; }
       .filters .multi { flex-basis: 9rem; }  /* two rows of two on a 375px phone */
       /* Open lists span the whole filter area, so those in the right-hand

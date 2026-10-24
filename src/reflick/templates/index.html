@@ -8,7 +8,7 @@
     document.addEventListener("alpine:init", () => {
       const rows = JSON.parse(document.getElementById("rows").textContent);
       const cinemaNames = {{ cinema_names | tojson }};
-      // Per filter: what the closed dropdown says when nothing is picked, the
+      // Per dropdown: what the closed dropdown says when nothing is picked, the
       // plural for "3 cinemas", and how to show a picked value.
       const LABELS = {
         cinemas: ["All cinemas", "cinemas", (id) => cinemaNames[id] || id],
@@ -16,30 +16,45 @@
         languages: ["Any language", "languages", (l) => l],
         genres: ["Any genre", "genres", (g) => g],
       };
+      const FILTERS = ["q", "days", ...Object.keys(LABELS)];
+      const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       Alpine.data("listing", () => ({
         // Each filter holds any number of picked values; none picked means all.
         q: "",
+        days: [],
         cinemas: [],
         districts: [],
         languages: [],
         genres: [],
         visible: new Set(rows.map((r) => r.id)),
+        dayCounts: {},  // matches per day under all filters except the date
         init() {
-          for (const key of ["q", ...Object.keys(LABELS)]) this.$watch(key, () => this.update());
+          for (const key of FILTERS) this.$watch(key, () => this.update());
+          this.update();
+          // Day headers stick right below the sticky filter bar. Its height is
+          // measured rather than computed in CSS, so fonts, zoom or wrapping
+          // can't make the headers slide under it.
+          const bar = this.$refs?.bar;
+          if (bar && window.ResizeObserver) {
+            new ResizeObserver(() => {
+              document.documentElement.style.setProperty("--sticky-top", `${bar.offsetHeight}px`);
+            }).observe(bar);
+          }
         },
         update() {
           const q = this.q.trim().toLowerCase();
           const any = (picked, value) => !picked.length || picked.includes(value);
-          this.visible = new Set(
-            rows
-              .filter((r) => any(this.cinemas, r.cinema))
-              .filter((r) => any(this.districts, r.district))
-              .filter((r) => any(this.languages, r.language))
-              // A film with several genres matches if any of them is picked.
-              .filter((r) => !this.genres.length || r.genres.some((g) => this.genres.includes(g)))
-              .filter((r) => !q || r.text.includes(q))
-              .map((r) => r.id)
-          );
+          const matching = rows
+            .filter((r) => any(this.cinemas, r.cinema))
+            .filter((r) => any(this.districts, r.district))
+            .filter((r) => any(this.languages, r.language))
+            // A film with several genres matches if any of them is picked.
+            .filter((r) => !this.genres.length || r.genres.some((g) => this.genres.includes(g)))
+            .filter((r) => !q || r.text.includes(q));
+          const counts = {};
+          for (const r of matching) counts[r.day] = (counts[r.day] || 0) + 1;
+          this.dayCounts = counts;
+          this.visible = new Set(matching.filter((r) => any(this.days, r.day)).map((r) => r.id));
         },
         label(key) {
           const [none, plural, show] = LABELS[key];
@@ -47,12 +62,37 @@
           if (!picked.length) return none;
           return picked.length <= 2 ? picked.map(show).join(", ") : `${picked.length} ${plural}`;
         },
+        toggleDay(day) {
+          this.days = this.days.includes(day) ? this.days.filter((d) => d !== day) : [...this.days, day];
+          this.showList();
+        },
+        allDays() {
+          this.days = [];
+          this.showList();
+        },
+        // If the list has been scrolled past, bring its start back into view.
+        showList() {
+          const list = this.$refs?.list;
+          if (list && list.getBoundingClientRect().top < 0) list.scrollIntoView({ behavior: "smooth" });
+        },
+        // "Today 24. Oct" / "Tomorrow 25. Oct" instead of the weekday, judged
+        // when the page is viewed, not when it was built.
+        dayLabel(day, fallback) {
+          const today = new Date();
+          const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+          const word = day === isoDay(today) ? "Today" : day === isoDay(tomorrow) ? "Tomorrow" : null;
+          return word ? fallback.replace(/^\S+/, word) : fallback;
+        },
+        scrollDays(direction) {
+          const strip = this.$refs.days;
+          strip.scrollBy({ left: direction * strip.clientWidth * 0.8, behavior: "smooth" });
+        },
         get active() {
-          return Boolean(this.q) || Object.keys(LABELS).some((key) => this[key].length);
+          return FILTERS.some((key) => this[key].length);
         },
         reset() {
           this.q = "";
-          for (const key of Object.keys(LABELS)) this[key] = [];
+          for (const key of FILTERS.slice(1)) this[key] = [];
         },
         dayVisible(day) {
           return rows.some((r) => r.day === day && this.visible.has(r.id));
@@ -66,30 +106,55 @@
 {% block content %}
 {% from "_multiselect.html" import multiselect %}
 <div x-data="listing">
-  {# No role="search": Pico turns such forms into a joined pill-shaped group,
-     which clashes with the spaced-out filter row. #}
-  <form class="filters" aria-label="Filter screenings" x-cloak @submit.prevent>
-    <input type="search" x-model="q" placeholder="Search title or director" aria-label="Search title or director">
-    {% if options.cinemas %}{{ multiselect("cinemas", "Cinemas", "All cinemas", options.cinemas) }}{% endif %}
-    {% if options.districts %}{{ multiselect("districts", "Districts", "Any district", options.districts) }}{% endif %}
-    {% if options.languages %}{{ multiselect("languages", "Languages", "Any language", options.languages) }}{% endif %}
-    {% if options.genres %}{{ multiselect("genres", "Genres", "Any genre", options.genres) }}{% endif %}
-    <button type="button" class="reset secondary outline" @click="reset()" :disabled="!active">Reset</button>
-  </form>
+  <div class="filterbar" x-ref="bar" x-cloak>
+    {# No role="search": Pico turns such forms into a joined pill-shaped group,
+       which clashes with the spaced-out filter row. #}
+    <form class="filters" aria-label="Filter screenings" @submit.prevent>
+      <input type="search" x-model="q" placeholder="Search title or director" aria-label="Search title or director">
+      {% if options.cinemas %}{{ multiselect("cinemas", "Cinemas", "All cinemas", options.cinemas) }}{% endif %}
+      {% if options.districts %}{{ multiselect("districts", "Districts", "Any district", options.districts) }}{% endif %}
+      {% if options.languages %}{{ multiselect("languages", "Languages", "Any language", options.languages) }}{% endif %}
+      {% if options.genres %}{{ multiselect("genres", "Genres", "Any genre", options.genres) }}{% endif %}
+      <button type="button" class="reset secondary outline" @click="reset()" :disabled="!active">Reset</button>
+    </form>
 
-  {% if not days %}
-  <p>No upcoming revival screenings right now.</p>
-  {% endif %}
+    {% if days %}
+    {# Date strip: one chip per day with screenings; the number counts matches
+       under the other filters, so busy days stand out. Several days can be picked. #}
+    <div class="daystrip" role="group" aria-label="Dates">
+      <button type="button" class="arrow" @click="scrollDays(-1)" aria-label="Earlier dates">‹</button>
+      <div class="days" x-ref="days">
+        <button type="button" class="chip" :aria-pressed="days.length === 0" @click="allDays()">All dates</button>
+        {% for day, _ in days %}
+        {% set iso = day.isoformat() %}
+        <button type="button" class="chip" data-day="{{ iso }}"
+                :aria-pressed="days.includes('{{ iso }}')" :disabled="!dayCounts['{{ iso }}']"
+                @click="toggleDay('{{ iso }}')">
+          <span x-text="dayLabel('{{ iso }}', '{{ day | short_day }}')">{{ day | short_day }}</span>
+          <small x-text="dayCounts['{{ iso }}'] || 0"></small>
+        </button>
+        {% endfor %}
+      </div>
+      <button type="button" class="arrow" @click="scrollDays(1)" aria-label="Later dates">›</button>
+    </div>
+    {% endif %}
+  </div>
 
-  {% for day, items in days %}
-  <section class="day" x-show="dayVisible('{{ day.isoformat() }}')">
-    <h2>{{ day | day_name }}</h2>
-    {% for item in items %}
-    {% include "_screening.html" %}
+  <div class="list" x-ref="list">
+    {% if not days %}
+    <p>No upcoming revival screenings right now.</p>
+    {% endif %}
+
+    {% for day, items in days %}
+    <section class="day" x-show="dayVisible('{{ day.isoformat() }}')">
+      <h2>{{ day | day_name }}</h2>
+      {% for item in items %}
+      {% include "_screening.html" %}
+      {% endfor %}
+    </section>
     {% endfor %}
-  </section>
-  {% endfor %}
 
-  <p x-cloak x-show="visible.size === 0">No screenings match these filters.</p>
+    <p x-cloak x-show="visible.size === 0">No screenings match these filters.</p>
+  </div>
 </div>
 {% endblock %}

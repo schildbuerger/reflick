@@ -85,7 +85,8 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 
 - [x] All upcoming revivals across cinemas on one page, grouped by day, late
       shows under the evening before
-- [ ] "This week" view or a way to jump to a day
+- [x] Date strip: one chip per day with screenings, showing how many match
+      the other filters; several days can be picked (e.g. a weekend)
 - [x] Filters: search, cinema, language/subtitles, genre, plus a Reset
       button
 - [x] Filter: districts, multi-select (e.g. Neukölln + Kreuzberg); only

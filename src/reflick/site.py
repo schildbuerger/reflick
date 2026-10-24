@@ -77,6 +77,11 @@ def day_name(day: date) -> str:
     return f"{WEEKDAYS[day.weekday()]}, {day.day}. {MONTHS[day.month - 1]}"
 
 
+def short_day(day: date) -> str:
+    """'Sat 24. Oct', for the date strip."""
+    return f"{WEEKDAYS[day.weekday()][:3]} {day.day}. {MONTHS[day.month - 1][:3]}"
+
+
 def maps_url(cinema: Cinema) -> str:
     """Google Maps search for the cinema (Maps URLs API, no key needed)."""
     query = urlencode({"api": 1, "query": f"{cinema.name}, {cinema.address}"})
@@ -174,6 +179,7 @@ def _environment() -> Environment:
         lstrip_blocks=True,
     )
     env.filters["day_name"] = day_name
+    env.filters["short_day"] = short_day
     env.filters["maps_url"] = maps_url
     return env
 

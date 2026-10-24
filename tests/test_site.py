@@ -140,6 +140,17 @@ def test_title_addons_become_badges_and_verified_title_is_shown(tmp_path):
 def test_day_name_format():
     assert site.day_name(date(2026, 10, 24)) == "Saturday, 24. October"
     assert site.day_name(date(2026, 11, 1)) == "Sunday, 1. November"
+    assert site.short_day(date(2026, 10, 24)) == "Sat 24. Oct"
+
+
+def test_date_strip_has_a_chip_per_day_with_screenings(tmp_path):
+    out = tmp_path / "site"
+    site.build(seeded_db(tmp_path), out, now=NOW)
+    index = (out / "index.html").read_text(encoding="utf-8")
+    # Casablanca at 24:00 on Saturday counts for Saturday, not Sunday.
+    assert re.findall(r'class="chip" data-day="([\d-]+)"', index) == ["2026-10-24", "2026-10-25"]
+    assert ">Sat 24. Oct</span>" in index
+    assert "All dates" in index
 
 
 def test_past_screenings_are_not_listed(tmp_path):
