@@ -140,6 +140,24 @@ def test_title_addons_become_badges_and_verified_title_is_shown(tmp_path):
     assert "SUMMARY:The Gold Rush (1925)" in (out / "reflick.ics").read_text(encoding="utf-8")
 
 
+def test_build_serves_assets_itself_and_writes_legal_pages(tmp_path):
+    out = tmp_path / "site"
+    site.build(seeded_db(tmp_path), out, now=NOW)
+    index = (out / "index.html").read_text(encoding="utf-8")
+    # No third-party requests: Pico and Alpine come from the site itself.
+    assert "cdn.jsdelivr.net" not in index
+    assert 'href="static/pico.min.css"' in index and 'src="static/alpine.min.js"' in index
+    assert (out / "static" / "pico.min.css").stat().st_size > 10_000
+    assert (out / "static" / "alpine.min.js").stat().st_size > 10_000
+    assert 'href="impressum.html"' in index and 'href="datenschutz.html"' in index
+    impressum = (out / "impressum.html").read_text(encoding="utf-8")
+    assert '<html lang="de">' in impressum
+    # The shipped templates are placeholders, and the build points that out.
+    placeholders = site.unfilled_placeholders(out)
+    assert set(placeholders) == {"impressum.html", "datenschutz.html"}
+    assert "[[E-Mail-Adresse]]" in placeholders["impressum.html"]
+
+
 def test_day_name_format():
     assert site.day_name(date(2026, 10, 24)) == "Saturday, 24. October"
     assert site.day_name(date(2026, 11, 1)) == "Sunday, 1. November"

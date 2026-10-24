@@ -29,9 +29,11 @@ each scraper will be.
       the scraper) for the three sources; terms of use not read yet
 - [ ] Ask cinemas directly for a feed (small repertory cinemas often welcome
       the exposure)
-- [ ] Impressum and DSGVO privacy policy, which a public German site needs.
-      The privacy policy must cover the CDN-hosted Pico CSS and Alpine.js (or
-      serve them from the site itself)
+- [~] Impressum and DSGVO privacy policy, which a public German site needs:
+      pages exist with placeholders (`[[ ... ]]`) for name, address, contact
+      and the GitHub transfer basis; `reflick build` warns until they're
+      filled in. Pico and Alpine are served from the site, so no CDN is
+      involved
 
 If most cinemas offer structured data or clean HTML, the project is
 straightforward. If most use PDFs, ingestion will take most of the effort.
@@ -55,10 +57,12 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 - [x] One adapter per source (a cinema or a group like Yorck), all emitting
       the same screening format
 - [x] A snapshot of each scrape run is stored
-- [~] Alert when a source or a single cinema suddenly returns zero
-      screenings: warnings on stderr and a non-zero exit code. Nothing sends
-      a notification yet
-- [ ] Daily scheduled run
+- [x] Alert when a source or a single cinema suddenly returns zero
+      screenings: the scrape exits non-zero, the daily workflow still
+      publishes and then fails, so GitHub emails a warning
+- [x] Daily scheduled run: `.github/workflows/publish.yml` (04:00 UTC), with
+      the database kept in the Actions cache and old runs pruned. Not run on
+      GitHub yet
 
 ## 5. Film matching and enrichment
 
@@ -110,7 +114,9 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 
 ## 8. Hosting and operations
 
-- [ ] Static hosting plus a scheduled job (small VPS cron or GitHub Actions)
+- [~] Static hosting plus a scheduled job: GitHub Pages workflow ready; the
+      repository, Pages setting and `OMDB_API_KEY` secret still need setting
+      up on GitHub (see README, "Publishing")
 - [ ] Register the domain once the name is final
 
 ## 9. MVP launch

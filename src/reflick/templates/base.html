@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="{% block lang %}en{% endblock %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}reflick – revival screenings in Berlin{% endblock %}</title>
   <meta name="description" content="Classics, restorations and re-releases in Berlin cinemas, collected in one place.">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
+  {# Served from the site itself, not a CDN, so browsers contact no third party. #}
+  <link rel="stylesheet" href="static/pico.min.css">
   <link rel="alternate" type="text/calendar" title="reflick calendar" href="reflick.ics">
   <style>
     :root {
@@ -154,6 +155,7 @@
       {% if updated %}Updated {{ updated.strftime("%d.%m.%Y, %H:%M") }}.{% endif %}
     </p>
     <p><a href="reflick.ics">Subscribe to the calendar (iCal)</a></p>
+    <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
   </footer>
 </body>
 </html>

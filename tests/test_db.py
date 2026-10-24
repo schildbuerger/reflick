@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from reflick import db
@@ -35,6 +35,34 @@ def test_latest_screenings_use_last_ok_run(tmp_path):
 
     [s] = db.latest_screenings(conn)
     assert s == make("New")
+
+
+def test_prune_keeps_recent_runs_and_each_sources_latest_ok_run(tmp_path):
+    conn = db.connect(tmp_path / "test.sqlite")
+    db.upsert_cinema(conn, CINEMA)
+
+    def run(source, status, days_ago):
+        run_id = db.start_run(conn, source)
+        db.save_screenings(conn, run_id, [make(f"{source}-{days_ago}")])
+        db.finish_run(conn, run_id, status)
+        started = (datetime.now(timezone.utc) - timedelta(days=days_ago)).isoformat()
+        conn.execute("UPDATE runs SET started_at = ? WHERE id = ?", (started, run_id))
+        conn.commit()
+        return run_id
+
+    old_ok = run("lichtblick", "ok", 60)
+    old_failed = run("lichtblick", "failed", 50)
+    recent_ok = run("lichtblick", "ok", 2)
+    only_ok_of_other_source = run("babylon", "ok", 40)  # stale, but still its newest data
+
+    assert db.prune_runs(conn, keep=timedelta(days=28)) == 2
+    remaining = {row[0] for row in conn.execute("SELECT id FROM runs")}
+    assert remaining == {recent_ok, only_ok_of_other_source}
+    assert old_ok not in remaining and old_failed not in remaining
+    orphans = conn.execute(
+        "SELECT COUNT(*) FROM raw_screenings WHERE run_id NOT IN (SELECT id FROM runs)"
+    ).fetchone()[0]
+    assert orphans == 0
 
 
 def test_cache_expires(tmp_path):

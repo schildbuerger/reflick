@@ -1,4 +1,4 @@
-"""Command line: `reflick scrape`, `reflick enrich`, `reflick build` and `reflick list`."""
+"""Command line: `reflick scrape`, `enrich`, `build`, `prune` and `list`."""
 
 import argparse
 import os
@@ -94,6 +94,16 @@ def enrich_films(args: argparse.Namespace) -> int:
 def build(args: argparse.Namespace) -> int:
     count = site.build(db.connect(args.db), args.out)
     print(f"site: {count} screenings written to {args.out}/")
+    for page, placeholders in site.unfilled_placeholders(args.out).items():
+        # A reminder, not an error: fill these in before the site goes public.
+        print(f"site: WARNING: {page} still has placeholders: {', '.join(placeholders)}",
+              file=sys.stderr)
+    return 0
+
+
+def prune(args: argparse.Namespace) -> int:
+    removed = db.prune_runs(db.connect(args.db), keep=timedelta(days=args.keep_days))
+    print(f"prune: removed {removed} runs older than {args.keep_days} days")
     return 0
 
 
@@ -139,6 +149,10 @@ def main(argv: list[str] | None = None) -> int:
 
     p_build = sub.add_parser("build", help="render the static site from the database")
     p_build.set_defaults(func=build)
+
+    p_prune = sub.add_parser("prune", help="delete old scrape runs to keep the database small")
+    p_prune.add_argument("--keep-days", type=int, default=28)
+    p_prune.set_defaults(func=prune)
 
     p_list = sub.add_parser("list", help="show upcoming revival screenings")
     p_list.add_argument("--days", type=int, default=7)

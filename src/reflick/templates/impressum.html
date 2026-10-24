@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{#
+  PLACEHOLDER: fill in every [[ ... ]] before publishing. `reflick build`
+  warns while any are left. This is a template, not legal advice.
+#}
+{% block lang %}de{% endblock %}
+{% block title %}Impressum – reflick{% endblock %}
+
+{% block content %}
+<p><a href="./">← Zum Programm</a></p>
+<h2>Impressum</h2>
+
+<h3>Angaben gemäß § 5 DDG</h3>
+<p>
+  [[Vor- und Nachname]]<br>
+  [[Straße und Hausnummer]]<br>
+  [[PLZ und Ort]]
+</p>
+
+<h3>Kontakt</h3>
+<p>E-Mail: [[E-Mail-Adresse]]</p>
+
+<h3>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h3>
+<p>[[Vor- und Nachname]], Anschrift wie oben</p>
+
+<h3>Hinweis zu den Inhalten</h3>
+<p>
+  reflick ist ein nicht-kommerzielles Projekt. Die Spielzeiten werden
+  automatisch aus den öffentlichen Programmen der Kinos übernommen und können
+  Fehler enthalten oder sich kurzfristig ändern. Verbindlich sind die Angaben
+  der Kinos. Für die Inhalte verlinkter Seiten sind ausschließlich deren
+  Betreiber verantwortlich.
+</p>
+<p>
+  Genre-Angaben stammen von <a href="https://www.omdbapi.com/">OMDb</a> und
+  stehen unter der Lizenz CC BY-NC 4.0.
+</p>
+{% endblock %}

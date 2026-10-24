@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{#
+  PLACEHOLDER: fill in every [[ ... ]] before publishing and check the text
+  against how the site is actually hosted. `reflick build` warns while any
+  placeholders are left. This is a template, not legal advice.
+#}
+{% block lang %}de{% endblock %}
+{% block title %}Datenschutz – reflick{% endblock %}
+
+{% block content %}
+<p><a href="./">← Zum Programm</a></p>
+<h2>Datenschutzerklärung</h2>
+
+<h3>Verantwortlicher</h3>
+<p>
+  [[Vor- und Nachname]]<br>
+  [[Straße und Hausnummer]], [[PLZ und Ort]]<br>
+  E-Mail: [[E-Mail-Adresse]]
+</p>
+
+<h3>Kurz gesagt</h3>
+<p>
+  reflick setzt keine Cookies, verwendet kein Tracking und keine
+  Analyse-Werkzeuge und hat keine Formulare. Alle Dateien der Seite
+  (einschließlich Stylesheet und Skript) werden vom eigenen Hosting
+  ausgeliefert; beim Aufruf werden keine Inhalte von Dritten geladen.
+</p>
+
+<h3>Hosting über GitHub Pages</h3>
+<p>
+  Die Seite wird über GitHub Pages bereitgestellt, einen Dienst der GitHub,
+  Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. Beim
+  Aufruf der Seite verarbeitet GitHub technisch notwendige Daten wie die
+  IP-Adresse, Datum und Uhrzeit des Abrufs sowie Browser-Informationen, um
+  die Seite auszuliefern und die Sicherheit des Dienstes zu gewährleisten.
+  Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an
+  einer sicheren und zuverlässigen Bereitstellung der Seite). Die Verarbeitung
+  kann in den USA erfolgen; GitHub stützt Übermittlungen auf
+  [[Grundlage prüfen, z. B. EU-US Data Privacy Framework / Standardvertragsklauseln]].
+  Weitere Informationen:
+  <a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement">Datenschutzerklärung von GitHub</a>.
+</p>
+
+<h3>Externe Links</h3>
+<p>
+  Die Seite verlinkt auf die Websites der Kinos, auf Google Maps und auf
+  Letterboxd. Erst wenn Sie einen solchen Link anklicken, verlassen Sie
+  reflick; dann gelten die Datenschutzbestimmungen des jeweiligen Anbieters.
+  Vorher werden keine Daten an diese Anbieter übertragen.
+</p>
+
+<h3>Kalender-Abonnement</h3>
+<p>
+  Wenn Sie den iCal-Kalender abonnieren, ruft Ihre Kalender-Anwendung die
+  Datei regelmäßig bei GitHub Pages ab. Dabei fallen dieselben technischen
+  Daten an wie beim Aufruf der Seite.
+</p>
+
+<h3>Ihre Rechte</h3>
+<p>
+  Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung
+  der Verarbeitung Ihrer Daten, auf Datenübertragbarkeit sowie auf
+  Widerspruch gegen die Verarbeitung (Art. 15–21 DSGVO). Wenden Sie sich dazu
+  an die oben genannte Adresse. Außerdem können Sie sich bei einer
+  Datenschutz-Aufsichtsbehörde beschweren, in Berlin bei der Berliner
+  Beauftragten für Datenschutz und Informationsfreiheit.
+</p>
+
+<p><small>Stand: [[Monat Jahr]]</small></p>
+{% endblock %}

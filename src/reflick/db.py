@@ -168,6 +168,35 @@ def save_screenings(
     conn.commit()
 
 
+def prune_runs(conn: sqlite3.Connection, keep: timedelta) -> int:
+    """Delete runs (and their screenings) older than `keep`, except each
+    source's latest successful run, which the site is built from. Also drops
+    page cache entries long past use. Returns the number of runs removed."""
+    now = datetime.now(timezone.utc)
+    cutoff = (now - keep).isoformat()
+    old = [
+        row[0]
+        for row in conn.execute(
+            """
+            SELECT id FROM runs
+            WHERE started_at < ?
+              AND id NOT IN (SELECT MAX(id) FROM runs WHERE status = 'ok' GROUP BY source)
+            """,
+            (cutoff,),
+        )
+    ]
+    marks = ",".join("?" * len(old))
+    if old:
+        conn.execute(f"DELETE FROM raw_screenings WHERE run_id IN ({marks})", old)
+        conn.execute(f"DELETE FROM runs WHERE id IN ({marks})", old)
+    conn.execute(
+        "DELETE FROM page_cache WHERE fetched_at < ?", ((now - timedelta(days=90)).isoformat(),)
+    )
+    conn.commit()
+    conn.execute("VACUUM")  # actually shrink the file, which the CI cache stores
+    return len(old)
+
+
 def title_key(title: str) -> str:
     return " ".join(title.casefold().split())
 

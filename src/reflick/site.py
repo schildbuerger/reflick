@@ -1,15 +1,19 @@
 """Static site: renders upcoming revivals into one HTML page and an iCal feed.
 
 Output layout:
-    index.html   all upcoming revivals across cinemas by day, with filters
-    reflick.ics  calendar feed of all listed screenings
+    index.html        all upcoming revivals across cinemas by day, with filters
+    reflick.ics       calendar feed of all listed screenings
+    impressum.html    legal notice, datenschutz.html privacy policy
+    static/           Pico CSS and Alpine.js, served with the site
 """
 
 import hashlib
 import itertools
+import re
 import sqlite3
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+from importlib.resources import files
 from pathlib import Path
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
@@ -22,6 +26,8 @@ from reflick.revival import is_revival, revival_labels
 from reflick.titles import display_title, split_addons
 
 BERLIN = ZoneInfo("Europe/Berlin")
+LEGAL_PAGES = ("impressum.html", "datenschutz.html")
+PLACEHOLDER_RE = re.compile(r"\[\[[^\]]+\]\]")
 DEFAULT_RUNTIME = timedelta(minutes=120)
 NIGHT_CUTOFF = timedelta(hours=5)
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -237,4 +243,24 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     )
     (out_dir / "index.html").write_text(index, encoding="utf-8")
     (out_dir / "reflick.ics").write_text(render_ics(items, now), encoding="utf-8", newline="")
+
+    env = _environment()
+    for page in LEGAL_PAGES:
+        html = env.get_template(page).render(cinemas=listed_cinemas)
+        (out_dir / page).write_text(html, encoding="utf-8")
+    static = files("reflick") / "static"
+    (out_dir / "static").mkdir(exist_ok=True)
+    for asset in static.iterdir():
+        if asset.name.endswith((".css", ".js")):
+            (out_dir / "static" / asset.name).write_bytes(asset.read_bytes())
     return len(items)
+
+
+def unfilled_placeholders(out_dir: Path) -> dict[str, list[str]]:
+    """'[[ ... ]]' placeholders still in the built legal pages, by page."""
+    found = {}
+    for page in LEGAL_PAGES:
+        path = out_dir / page
+        if path.exists() and (hits := PLACEHOLDER_RE.findall(path.read_text(encoding="utf-8"))):
+            found[page] = sorted(set(hits))
+    return found

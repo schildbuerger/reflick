@@ -1,0 +1,104 @@
+# Scrapes the cinemas once a day, rebuilds the site and publishes it on
+# GitHub Pages.
+#
+# One-time setup on GitHub (see README, "Publishing"):
+# - Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# - Settings → Secrets and variables → Actions → New repository secret:
+#   OMDB_API_KEY (without it the site is built without genres)
+#
+# The SQLite database is kept between runs in the Actions cache, so OMDb
+# matches and Yorck film credits are only looked up once.
+
+name: Scrape and publish
+
+on:
+  schedule:
+    - cron: "0 4 * * *"  # daily 04:00 UTC = 05:00 / 06:00 in Berlin
+  workflow_dispatch:      # "Run workflow" button in the Actions tab
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "*.md"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two scrapes at once; let a running deployment finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      scrape: ${{ steps.scrape.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Test
+        run: pytest -q
+
+      - name: Restore database
+        uses: actions/cache/restore@v4
+        with:
+          path: data/reflick.sqlite
+          # Cache entries can't be overwritten, so each run saves under its own
+          # key and the next run restores the newest one by prefix.
+          key: reflick-db-${{ github.run_id }}
+          restore-keys: reflick-db-
+
+      # Exits non-zero when a cinema fails or suddenly returns nothing. The site
+      # is still built from each cinema's last good data and published; the
+      # final job then marks the run as failed, so GitHub emails a warning.
+      - name: Scrape, look up genres, build site
+        id: scrape
+        continue-on-error: true
+        env:
+          OMDB_API_KEY: ${{ secrets.OMDB_API_KEY }}
+        run: reflick scrape
+
+      - name: Prune old runs
+        run: reflick prune --keep-days 28
+
+      - name: Save database
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/reflick.sqlite
+          key: reflick-db-${{ github.run_id }}
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Runs after publishing, so a broken cinema never keeps the others offline.
+  report:
+    needs: [build, deploy]
+    if: needs.build.outputs.scrape == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::The scrape reported problems (a cinema failed or returned no screenings). The site was published with the last good data; see the 'Scrape, look up genres, build site' step."
+          exit 1

@@ -101,12 +101,16 @@ to `site/`:
   ("Chaplin's The Gold Rush" → "The Gold Rush"); the database keeps the
   cinema's original title.
 - `reflick.ics`: a calendar feed to subscribe to.
+- `impressum.html` and `datenschutz.html`: legal notice and privacy policy
+  (German), required for a public site in Germany.
 
 Templates live in `src/reflick/templates/` (Jinja2). Styling comes from
 [Pico CSS](https://picocss.com/) and the filters use
-[Alpine.js](https://alpinejs.dev/), both loaded from a CDN, so there is no
-JavaScript build step. Every screening is plain HTML; Alpine only hides rows
-that don't match, so the page works without JavaScript too.
+[Alpine.js](https://alpinejs.dev/). Both are stored in `src/reflick/static/`
+and served with the site, so visitors' browsers contact no third party and
+there is no JavaScript build step (versions and licences in
+`src/reflick/static/LICENSES.md`). Every screening is plain HTML; Alpine only
+hides rows that don't match, so the page works without JavaScript too.
 
 To preview locally:
 
@@ -117,13 +121,44 @@ python3 -m http.server 8000 --directory site
 Then open http://localhost:8000. The folder can be deployed as-is to any
 static host.
 
+## Publishing (GitHub Pages)
+
+`.github/workflows/publish.yml` scrapes once a day (04:00 UTC), looks up
+genres, rebuilds the site and publishes it on GitHub Pages. It also runs on
+pushes to `main` and from the "Run workflow" button in the Actions tab.
+
+- The database is carried from run to run in the Actions cache, so OMDb
+  matches and Yorck film credits are only fetched once. `reflick prune`
+  keeps the last 28 days of scrape runs (plus each source's latest good run).
+- If a cinema fails or suddenly returns nothing, the site is still published
+  from its last good data, and the run is then marked as failed, so GitHub
+  emails a warning.
+
+One-time setup:
+
+1. Fill in every `[[ ... ]]` placeholder in
+   `src/reflick/templates/impressum.html` and `datenschutz.html`.
+   `reflick build` warns while any are left. The texts are a starting point,
+   not legal advice.
+2. Create a **public** GitHub repository (Pages on private repositories
+   needs a paid plan) and push `main` to it.
+3. Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+4. Settings → Secrets and variables → Actions → New repository secret:
+   `OMDB_API_KEY`. Without it the site is built without genres.
+5. Actions → "Scrape and publish" → **Run workflow** for the first run. The
+   site then lives at `https://<user>.github.io/<repository>/`; all links are
+   relative, so that sub-path works.
+
+For a custom domain, add a `CNAME` file containing the domain to the site
+output, point the domain's DNS at GitHub Pages, and enable "Enforce HTTPS"
+in the Pages settings.
+
 ## Open decisions
 
 - [x] Tech stack: Python
 - [ ] Final name and domain (`.de` is cheapest, about €5–10/year; `.berlin`
       fits but costs about €40–60/year)
-- [ ] Hosting: static site plus a daily scheduled job (VPS cron or GitHub
-      Actions)
+- [x] Hosting: GitHub Pages, built daily by GitHub Actions
 
 ## Docs
 
