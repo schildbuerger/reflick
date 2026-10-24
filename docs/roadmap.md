@@ -92,6 +92,13 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       districts with upcoming revivals are offered
 - [ ] Filter: format (35mm, 4K restoration, silent film with live music:
       needs a mapping of the cinemas' different labels)
+- [x] Sticky filter bar on screens wider than 576px, with day headers
+      sticking below it
+- [ ] Mobile filter sheet: on phones, a compact sticky bar with the search
+      and a "Filters (n)" button that opens a bottom sheet with the filters
+      stacked full-width, updating the list live and ending in "Show n
+      screenings" and Reset. Could use a native `<dialog>`, which Pico
+      already styles. Until then the filters scroll away on phones
 - [ ] Film page with all upcoming screenings of one title: built, then
       removed in favour of the single page. Decide whether to bring it back
 - [x] iCal feed (`reflick.ics`)
