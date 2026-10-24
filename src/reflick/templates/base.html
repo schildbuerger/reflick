@@ -14,10 +14,24 @@
     header.site h1 a { text-decoration: none; color: inherit; }
     header.site p { margin: 0; color: var(--pico-muted-color); }
     /* One row: search twice as wide as each select, however many selects there are. */
-    .filters { display: flex; gap: 0.5rem; margin-block: 1rem; }
-    .filters > * { margin: 0; min-width: 0; }
-    .filters input[type=search] { flex: 2 1 0; }
-    .filters select { flex: 1 1 0; }
+    .filters {
+      display: flex; gap: 0.5rem; margin-block: 1rem; align-items: center;
+      /* Pico's own form-control height, applied to every control so they line up. */
+      --filter-height: calc(1rem * var(--pico-line-height) + var(--pico-form-element-spacing-vertical) * 2 + var(--pico-border-width) * 2);
+    }
+    /* input:not([type=...]) because Pico's bottom margin on inputs uses that
+       more specific selector and would otherwise make the row taller. */
+    .filters > *, .filters > input:not([type=checkbox], [type=radio]) { margin: 0; min-width: 0; }
+    .filters input[type=search], .filters select, .filters .reset,
+    .filters details.dropdown > summary:not([role]) { height: var(--filter-height); }
+    /* Same corners for every control: Pico makes search fields pill-shaped. */
+    .filters input[type=search] { flex: 2 1 0; --pico-border-radius: inherit; }
+    .filters select, .filters .districts { flex: 1 1 0; }
+    .filters details.dropdown.districts > summary:not([role]) {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--pico-form-element-color);  /* Pico greys it like a placeholder; selects aren't */
+    }
+    .filters .districts > ul { min-width: 12rem; }
     .filters .reset { flex: none; width: auto; padding-inline: 1rem; }
     .day h2 {
       position: sticky; top: 0; z-index: 1;
@@ -51,7 +65,7 @@
     @media (max-width: 576px) {
       .filters { flex-wrap: wrap; }
       .filters input[type=search] { flex-basis: 100%; }
-      .filters select { flex-basis: 6rem; }  /* three selects still fit a 375px phone */
+      .filters select, .filters .districts { flex-basis: 9rem; }  /* two rows of two on a 375px phone */
       .filters .reset { flex-basis: 100%; }
       .screening { grid-template-columns: 3rem 1fr; }
     }

@@ -187,11 +187,13 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
 
     languages = sorted({i.screening.language for i in items if i.screening.language})
     genres = sorted({g for i in items for g in i.genres})
+    districts = sorted({i.cinema.neighbourhood for i in items if i.cinema.neighbourhood})
     rows = [
         {
             "id": i.id,
             "day": i.programme_day.isoformat(),
             "cinema": i.cinema.id,
+            "district": i.cinema.neighbourhood,
             "language": i.screening.language or "",
             "genres": i.genres,
             "text": " ".join(
@@ -205,6 +207,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
         days=by_day(items),
         languages=languages,
         genres=genres,
+        districts=districts,
         rows=rows,
         cinemas=sorted({i.cinema for i in items}, key=lambda c: c.name),
         updated=updated.astimezone(BERLIN) if updated else None,

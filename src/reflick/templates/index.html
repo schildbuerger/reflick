@@ -10,17 +10,19 @@
       Alpine.data("listing", () => ({
         q: "",
         cinema: "",
+        districts: [],  // any number of districts; none selected means all
         language: "",
         genre: "",
         visible: new Set(rows.map((r) => r.id)),
         init() {
-          for (const key of ["q", "cinema", "language", "genre"]) this.$watch(key, () => this.update());
+          for (const key of ["q", "cinema", "districts", "language", "genre"]) this.$watch(key, () => this.update());
         },
         update() {
           const q = this.q.trim().toLowerCase();
           this.visible = new Set(
             rows
               .filter((r) => !this.cinema || r.cinema === this.cinema)
+              .filter((r) => !this.districts.length || this.districts.includes(r.district))
               .filter((r) => !this.language || r.language === this.language)
               .filter((r) => !this.genre || r.genres.includes(this.genre))
               .filter((r) => !q || r.text.includes(q))
@@ -28,10 +30,16 @@
           );
         },
         get active() {
-          return Boolean(this.q || this.cinema || this.language || this.genre);
+          return Boolean(this.q || this.cinema || this.districts.length || this.language || this.genre);
+        },
+        get districtLabel() {
+          const d = this.districts;
+          if (!d.length) return "Any district";
+          return d.length <= 2 ? d.join(", ") : `${d.length} districts`;
         },
         reset() {
           this.q = this.cinema = this.language = this.genre = "";
+          this.districts = [];
         },
         dayVisible(day) {
           return rows.some((r) => r.day === day && this.visible.has(r.id));
@@ -44,12 +52,25 @@
 
 {% block content %}
 <div x-data="listing">
-  <form class="filters" role="search" x-cloak @submit.prevent>
+  {# No role="search": Pico turns such forms into a joined pill-shaped group,
+     which clashes with the spaced-out filter row. #}
+  <form class="filters" aria-label="Filter screenings" x-cloak @submit.prevent>
     <input type="search" x-model="q" placeholder="Search title or director" aria-label="Search title or director">
     <select x-model="cinema" aria-label="Cinema">
       <option value="">All cinemas</option>
       {% for c in cinemas %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
     </select>
+    {% if districts %}
+    {# Pico's dropdown: looks like a select, but holds checkboxes for several districts. #}
+    <details class="dropdown districts" @click.outside="$el.open = false">
+      <summary aria-label="Districts" x-text="districtLabel">Any district</summary>
+      <ul>
+        {% for d in districts %}
+        <li><label><input type="checkbox" value="{{ d }}" x-model="districts">{{ d }}</label></li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
     <select x-model="language" aria-label="Language">
       <option value="">Any language</option>
       {% for lang in languages %}<option value="{{ lang }}">{{ lang }}</option>{% endfor %}

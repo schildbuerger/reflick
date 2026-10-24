@@ -88,9 +88,10 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 - [ ] "This week" view or a way to jump to a day
 - [x] Filters: search, cinema, language/subtitles, genre, plus a Reset
       button
-- [ ] Filters: neighbourhood (districts are already stored), format (35mm,
-      4K restoration, silent film with live music: needs a mapping of the
-      cinemas' different labels)
+- [x] Filter: districts, multi-select (e.g. Neukölln + Kreuzberg); only
+      districts with upcoming revivals are offered
+- [ ] Filter: format (35mm, 4K restoration, silent film with live music:
+      needs a mapping of the cinemas' different labels)
 - [ ] Film page with all upcoming screenings of one title: built, then
       removed in favour of the single page. Decide whether to bring it back
 - [x] iCal feed (`reflick.ics`)

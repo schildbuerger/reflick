@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -81,6 +82,10 @@ def test_single_page_lists_screenings_across_cinemas(tmp_path):
     assert "Metropolis" in index and "Casablanca" in index
     assert '<option value="other">Other Kino</option>' in index
     assert '<option value="lichtblick">Lichtblick-Kino</option>' in index
+    # One checkbox per district that has screenings, in alphabetical order.
+    districts = re.findall(r'<input type="checkbox" value="([^"]+)" x-model="districts">', index)
+    assert districts == ["Mitte", "Prenzlauer Berg"]
+    assert '"district": "Mitte"' in index
 
 
 def test_genres_from_omdb_are_shown_and_filterable(tmp_path):
