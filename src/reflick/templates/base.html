@@ -44,8 +44,11 @@
     .filters .reset { flex: none; width: auto; padding-inline: 1rem; }
     .day h2 {
       position: sticky; top: var(--sticky-top); z-index: 1;
-      margin: 0; padding-block: 0.75rem 0.5rem;
+      margin: 0; padding: 0.6rem 0.75rem;
+      /* A faint tint of the accent colour marks each new day; it stays opaque
+         (sticky headers cover the rows below) and works in light and dark mode. */
       background: var(--pico-background-color);
+      background: color-mix(in srgb, var(--pico-primary) 10%, var(--pico-background-color));
       font-size: 1.05rem;
       border-bottom: 1px solid var(--pico-muted-border-color);
     }
