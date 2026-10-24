@@ -16,7 +16,7 @@ from reflick.omdb import (
 
 CASABLANCA = {
     "Response": "True", "Title": "Casablanca", "Year": "1943", "imdbID": "tt0034583",
-    "Genre": "Drama, Romance, War", "Director": "Michael Curtiz",
+    "Genre": "Drama, Romance, War", "Director": "Michael Curtiz", "imdbVotes": "632,401",
 }
 MODERN_TIMES = {
     "Response": "True", "Title": "Modern Times", "Year": "1936", "imdbID": "tt0027977",
@@ -175,7 +175,9 @@ def test_enrich_caches_matches_and_misses(tmp_path):
     result = enrich.enrich(conn, client, now)
     assert (result.matched, result.missed) == (1, 1)  # New Film is no revival: not looked up
     assert db.film_info(conn) == {
-        ("casablanca", 1942): db.FilmInfo("Casablanca", ["Drama", "Romance", "War"], "tt0034583")
+        ("casablanca", 1942): db.FilmInfo(
+            "Casablanca", ["Drama", "Romance", "War"], "tt0034583", imdb_votes=632401
+        )
     }
 
     # Second run: both are cached, no requests.
@@ -193,3 +195,20 @@ def test_enrich_stops_on_api_error(tmp_path):
     result = enrich.enrich(conn, client, datetime(2026, 10, 24, tzinfo=timezone.utc))
     assert result.error == "OMDb: Invalid API key!"
     assert db.film_matches(conn) == {}
+
+
+def test_matches_from_before_vote_counts_get_them_once(tmp_path):
+    conn = seeded(tmp_path, [("Casablanca", 1942)])
+    db.save_film_match(conn, "Casablanca", 1942, "tt0034583", "Casablanca", ["Drama"])  # no count
+    now = datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc)
+    client = fake_client(by_title({"tt0034583": CASABLANCA}))
+    enrich.enrich(conn, client, now)
+    assert [c["i"] for c in client.calls] == ["tt0034583"]
+    info = db.film_info(conn)[("casablanca", 1942)]
+    assert (info.imdb_votes, info.genres) == (632401, ["Drama"])  # the match itself is kept
+
+    # No count on IMDb: stored as 0, so it isn't asked again.
+    db.save_film_match(conn, "Casablanca", 1942, "tt0034583", "Casablanca", ["Drama"])
+    enrich.enrich(conn, fake_client(by_title({})), now)
+    assert db.film_info(conn)[("casablanca", 1942)].imdb_votes == 0
+    assert enrich.enrich(conn, fake_client(by_title({})), now).requests == 0

@@ -6,6 +6,7 @@ Gottes" where OMDb doesn't, and its IMDb id then lets OMDb look up exactly
 that film.
 """
 
+import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -106,6 +107,19 @@ def enrich(
     result = Result()
     for key, film in films_to_look_up(conn, now).items():
         row, wiki = cached.get(key), titles.get(key)
+        if row and row["imdb_id"] and row["imdb_votes"] is None:
+            # Matched before vote counts were stored: fetch them once, keep the match.
+            try:
+                found = find_by_imdb_id(client, row["imdb_id"])
+            except OmdbError as exc:
+                result.error = str(exc)
+                break
+            db.save_film_match(
+                conn, film.title, key[1], row["imdb_id"], row["matched_title"],
+                json.loads(row["genres"]), found.imdb_votes if found else 0,
+            )
+            result.cached += 1
+            continue
         imdb_id = wiki["imdb_id"] if wiki else None
         # A miss found on Wikidata since gets another try right away.
         new_id = imdb_id and row and not row["imdb_id"] and wiki["looked_up_at"] > row["looked_up_at"]
@@ -122,7 +136,9 @@ def enrich(
             result.error = str(exc)
             break
         if match:
-            db.save_film_match(conn, film.title, key[1], match.imdb_id, match.title, match.genres)
+            db.save_film_match(
+                conn, film.title, key[1], match.imdb_id, match.title, match.genres, match.imdb_votes
+            )
             result.matched += 1
         else:
             db.save_film_match(conn, film.title, key[1], None, None, [])

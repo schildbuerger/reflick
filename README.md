@@ -99,6 +99,14 @@ weren't found are retried after a week, or right away once Wikidata has
 found their IMDb id. The site credits OMDb in the footer, as its CC BY-NC
 4.0 licence requires, and Wikidata (CC0) alongside.
 
+OMDb also gives each film's number of IMDb votes, which the popularity
+filter uses: "Well known" from 100,000 votes (Citizen Kane, Vertigo),
+"Lesser known" from 10,000 (Aguirre, First Cow), "Rarely seen" below that.
+Films without an OMDb match are "Unknown", not rare. The levels are
+`POPULARITY` in `src/reflick/site.py`. IMDb's audience is international, so
+films famous mainly in Germany can rank low (Loriot's *Ödipussi*: 4,660
+votes).
+
 ### Website
 
 `reflick build` (also run at the end of every `scrape`) writes a static site
@@ -106,11 +114,11 @@ to `site/`:
 
 - `index.html`: a single page with all upcoming revivals across cinemas by
   day, with search, multi-select filters (cinema, district, language,
-  genre) and a date strip with one chip per day. Each row's Details button
-  opens the film's page on the cinema's own website. Late shows after midnight
-  are listed under the evening before (e.g. 24:00), as cinemas do. The first
-  two days read "Today" and "Tomorrow", judged in the visitor's browser
-  (until 5:00 the evening before still counts as today).
+  genre, popularity) and a date strip with one chip per day. Each row's
+  Details button opens the film's page on the cinema's own website. Late
+  shows after midnight are listed under the evening before (e.g. 24:00), as
+  cinemas do. The first two days read "Today" and "Tomorrow", judged in the
+  visitor's browser (until 5:00 the evening before still counts as today).
 - Titles are shown without the cinemas' add-ons: "Modern Times LIVE mit
   Babylon Orchester Berlin" becomes "Modern Times" with a "Live mit Babylon
   Orchester Berlin" badge (see `src/reflick/titles.py`). When OMDb matched

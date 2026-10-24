@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS film_matches (
     matched_title TEXT,
     genres TEXT NOT NULL,  -- JSON list
     looked_up_at TEXT NOT NULL,
+    imdb_votes INTEGER,  -- how well known the film is; 0 if IMDb has no count
     PRIMARY KEY (title_key, year)
 );
 -- Wikidata lookups, keyed like film_matches. qid is NULL when nothing matched.
@@ -93,6 +94,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE runs RENAME COLUMN cinema_id TO source")
     if "original_title" not in _columns(conn, "raw_screenings"):
         conn.execute("ALTER TABLE raw_screenings ADD COLUMN original_title TEXT")
+    if "imdb_votes" not in _columns(conn, "film_matches"):
+        conn.execute("ALTER TABLE film_matches ADD COLUMN imdb_votes INTEGER")
     conn.commit()
 
 
@@ -224,11 +227,14 @@ def save_film_match(
     imdb_id: str | None,
     matched_title: str | None,
     genres: list[str],
+    imdb_votes: int | None = None,
 ) -> None:
     conn.execute(
-        "INSERT OR REPLACE INTO film_matches VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO film_matches"
+        " (title_key, year, imdb_id, matched_title, genres, looked_up_at, imdb_votes)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
         (title_key(title), year, imdb_id, matched_title,
-         json.dumps(genres, ensure_ascii=False), _now()),
+         json.dumps(genres, ensure_ascii=False), _now(), imdb_votes),
     )
     conn.commit()
 
@@ -263,6 +269,7 @@ class FilmInfo:
     imdb_id: str | None = None
     title_de: str | None = None  # from Wikidata
     original_title: str | None = None  # from Wikidata
+    imdb_votes: int | None = None  # from OMDb; None if not matched or not fetched yet
 
 
 def film_info(conn: sqlite3.Connection) -> dict[tuple[str, int], FilmInfo]:
@@ -278,6 +285,7 @@ def film_info(conn: sqlite3.Connection) -> dict[tuple[str, int], FilmInfo]:
             imdb_id=(o and o["imdb_id"]) or (w and w["imdb_id"]) or None,
             title_de=w["title_de"] if w else None,
             original_title=w["original_title"] if w else None,
+            imdb_votes=o["imdb_votes"] if o else None,
         )
     return info
 

@@ -32,6 +32,7 @@ class Match:
     year: int | None
     director: str | None
     genres: list[str] = field(default_factory=list)
+    imdb_votes: int = 0  # 0 when IMDb has no count ("N/A")
 
 
 class OmdbClient:
@@ -93,6 +94,7 @@ def _match(data: dict) -> Match:
         year=_year(data.get("Year")),
         director=data.get("Director") if data.get("Director") != "N/A" else None,
         genres=[g.strip() for g in genre.split(",") if g.strip() and genre != "N/A"],
+        imdb_votes=int(votes) if (votes := (data.get("imdbVotes") or "").replace(",", "")).isdigit() else 0,
     )
 
 

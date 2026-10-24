@@ -8,6 +8,7 @@
     document.addEventListener("alpine:init", () => {
       const rows = JSON.parse(document.getElementById("rows").textContent);
       const cinemaNames = {{ cinema_names | tojson }};
+      const popularityNames = {{ popularity_names | tojson }};
       // Per dropdown: what the closed dropdown says when nothing is picked, the
       // plural for "3 cinemas", and how to show a picked value.
       const LABELS = {
@@ -15,6 +16,7 @@
         districts: ["Any district", "districts", (d) => d],
         languages: ["Any language", "languages", (l) => l],
         genres: ["Any genre", "genres", (g) => g],
+        popularity: ["Any popularity", "levels", (p) => popularityNames[p] || p],
       };
       const FILTERS = ["q", "days", ...Object.keys(LABELS)];
       const NIGHT_CUTOFF_MS = {{ night_cutoff_hours }} * 3600 * 1000;
@@ -27,6 +29,7 @@
         districts: [],
         languages: [],
         genres: [],
+        popularity: [],
         visible: new Set(rows.map((r) => r.id)),
         dayCounts: {},  // matches per day under all filters except the date
         init() {
@@ -51,6 +54,7 @@
             .filter((r) => any(this.languages, r.language))
             // A film with several genres matches if any of them is picked.
             .filter((r) => !this.genres.length || r.genres.some((g) => this.genres.includes(g)))
+            .filter((r) => any(this.popularity, r.popularity))
             .filter((r) => !q || r.text.includes(q));
           const counts = {};
           for (const r of matching) counts[r.day] = (counts[r.day] || 0) + 1;
@@ -116,6 +120,7 @@
       {% if options.districts %}{{ multiselect("districts", "Districts", "Any district", options.districts) }}{% endif %}
       {% if options.languages %}{{ multiselect("languages", "Languages", "Any language", options.languages) }}{% endif %}
       {% if options.genres %}{{ multiselect("genres", "Genres", "Any genre", options.genres) }}{% endif %}
+      {% if options.popularity %}{{ multiselect("popularity", "Popularity", "Any popularity", options.popularity) }}{% endif %}
       <button type="button" class="reset secondary outline" @click="reset()" :disabled="!active">Reset</button>
     </form>
 

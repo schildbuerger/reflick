@@ -30,6 +30,15 @@ LEGAL_PAGES = ("impressum.html", "datenschutz.html")
 PLACEHOLDER_RE = re.compile(r"\[\[[^\]]+\]\]")
 DEFAULT_RUNTIME = timedelta(minutes=120)
 NIGHT_CUTOFF = timedelta(hours=5)
+# How well known a film is, by its IMDb vote count, best known first:
+# (value, label, minimum votes). Films without an OMDb match are "unknown",
+# which isn't the same as rare: they're often just listed under a German title.
+POPULARITY = [
+    ("well-known", "Well known", 100_000),  # Citizen Kane, Vertigo, The Shining
+    ("lesser-known", "Lesser known", 10_000),  # Aguirre, First Cow
+    ("rare", "Rarely seen", 0),  # Das Kaninchen bin ich, United Trash
+]
+POPULARITY_UNKNOWN = ("unknown", "Unknown")
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 MONTHS = [
     "January", "February", "March", "April", "May", "June",
@@ -50,6 +59,14 @@ class Item:
     genres: list[str]  # from OMDb, empty if the film wasn't matched
     imdb_id: str | None = None  # from OMDb or Wikidata, if matched
     original_title: str | None = None  # from Wikidata, only when it differs from title
+    imdb_votes: int | None = None  # from OMDb, None if not matched
+
+    @property
+    def popularity(self) -> str:
+        """One of the POPULARITY values, or "unknown"."""
+        if self.imdb_votes is None:
+            return POPULARITY_UNKNOWN[0]
+        return next(value for value, _, least in POPULARITY if self.imdb_votes >= least)
 
     @property
     def letterboxd_url(self) -> str | None:
@@ -118,6 +135,7 @@ def make_item(
         genres=info.genres if info else [],
         imdb_id=info.imdb_id if info else None,
         original_title=original if original and not same_title(original, title) else None,
+        imdb_votes=info.imdb_votes if info else None,
     )
 
 
@@ -221,6 +239,11 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
         "districts": _pairs(i.cinema.neighbourhood for i in items),
         "languages": _pairs(i.screening.language for i in items),
         "genres": _pairs(g for i in items for g in i.genres),
+        # In their own order (best known first), not alphabetically.
+        "popularity": [
+            (value, label) for value, label in [*((v, l) for v, l, _ in POPULARITY), POPULARITY_UNKNOWN]
+            if any(i.popularity == value for i in items)
+        ],
     }
     rows = [
         {
@@ -230,6 +253,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
             "district": i.cinema.neighbourhood,
             "language": i.screening.language or "",
             "genres": i.genres,
+            "popularity": i.popularity,
             "text": " ".join(
                 # All titles, so "Gold Rush" and "Orchester" both find the Chaplin show.
                 filter(None, (
@@ -244,6 +268,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
         days=by_day(items),
         options=options,
         cinema_names={c.id: c.name for c in listed_cinemas},
+        popularity_names=dict(options["popularity"]),
         rows=rows,
         cinemas=listed_cinemas,
         updated=updated.astimezone(BERLIN) if updated else None,

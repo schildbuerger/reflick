@@ -1,7 +1,10 @@
+import json
 import re
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+import pytest
 
 from reflick import db, site
 from reflick.adapters.lichtblick import CINEMA, parse_film_page
@@ -182,3 +185,29 @@ def test_date_strip_has_a_chip_per_day_with_screenings(tmp_path):
 def test_past_screenings_are_not_listed(tmp_path):
     later = datetime(2026, 10, 26, 12, 0, tzinfo=BERLIN)
     assert site.build(seeded_db(tmp_path), tmp_path / "site", now=later) == 0
+
+
+def test_popularity_levels_are_filterable_best_known_first(tmp_path):
+    conn = seeded_db(tmp_path)
+    db.save_film_match(conn, "Casablanca", 1942, "tt0034583", "Casablanca", [], 632_401)
+    db.save_film_match(conn, "Trainspotting", 1996, "tt0117951", "Trainspotting", [], 9_999)
+    # United Trash isn't matched: its popularity is unknown, not rare.
+    out = tmp_path / "site"
+    site.build(conn, out, now=NOW)
+    index = (out / "index.html").read_text(encoding="utf-8")
+    assert checkboxes(index, "popularity") == ["well-known", "rare", "unknown"]
+    rows = json.loads(re.search(r'<script type="application/json" id="rows">(.*?)</script>', index).group(1))
+    by_popularity = {r["popularity"] for r in rows}
+    assert by_popularity == {"well-known", "rare", "unknown"}
+    assert '"lesser-known": "Lesser known"' not in index  # only levels that occur are offered
+
+
+@pytest.mark.parametrize(
+    "votes, expected",
+    [(None, "unknown"), (0, "rare"), (9_999, "rare"), (10_000, "lesser-known"), (100_000, "well-known")],
+)
+def test_popularity_thresholds(votes, expected):
+    item = site.Item(
+        id=0, screening=None, cinema=None, start=NOW, title="x", labels=[], genres=[], imdb_votes=votes
+    )
+    assert item.popularity == expected
