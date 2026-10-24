@@ -178,6 +178,11 @@ def _environment() -> Environment:
     return env
 
 
+def _pairs(values) -> list[tuple[str, str]]:
+    """Distinct non-empty values, sorted, as (value, text) filter options."""
+    return [(v, v) for v in sorted({v for v in values if v}, key=str.casefold)]
+
+
 def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) -> int:
     """Write the site to out_dir. Returns the number of screenings listed."""
     now = now or datetime.now(BERLIN)
@@ -186,9 +191,14 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     updated = db.last_update(conn)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    languages = sorted({i.screening.language for i in items if i.screening.language})
-    genres = sorted({g for i in items for g in i.genres})
-    districts = sorted({i.cinema.neighbourhood for i in items if i.cinema.neighbourhood})
+    listed_cinemas = sorted({i.cinema for i in items}, key=lambda c: c.name.casefold())
+    # Filter choices as (value, text) pairs; only values that occur are offered.
+    options = {
+        "cinemas": [(c.id, c.name) for c in listed_cinemas],
+        "districts": _pairs(i.cinema.neighbourhood for i in items),
+        "languages": _pairs(i.screening.language for i in items),
+        "genres": _pairs(g for i in items for g in i.genres),
+    }
     rows = [
         {
             "id": i.id,
@@ -206,11 +216,10 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     ]
     index = _environment().get_template("index.html").render(
         days=by_day(items),
-        languages=languages,
-        genres=genres,
-        districts=districts,
+        options=options,
+        cinema_names={c.id: c.name for c in listed_cinemas},
         rows=rows,
-        cinemas=sorted({i.cinema for i in items}, key=lambda c: c.name),
+        cinemas=listed_cinemas,
         updated=updated.astimezone(BERLIN) if updated else None,
     )
     (out_dir / "index.html").write_text(index, encoding="utf-8")

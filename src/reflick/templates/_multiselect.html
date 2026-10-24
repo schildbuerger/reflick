@@ -1,0 +1,15 @@
+{# Pico's dropdown: looks like a select, but holds checkboxes so any number of
+   options can be picked. `model` is the Alpine array the checkboxes fill
+   (see `label()` in index.html), `title` names the dropdown for screen
+   readers, `placeholder` is shown while nothing is picked, and `options` are
+   (value, text) pairs. #}
+{% macro multiselect(model, title, placeholder, options) %}
+<details class="dropdown multi multi-{{ model }}" @click.outside="$el.open = false">
+  <summary aria-label="{{ title }}" x-text="label('{{ model }}')">{{ placeholder }}</summary>
+  <ul>
+    {% for value, text in options %}
+    <li><label><input type="checkbox" value="{{ value }}" x-model="{{ model }}">{{ text }}</label></li>
+    {% endfor %}
+  </ul>
+</details>
+{% endmacro %}

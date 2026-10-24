@@ -7,39 +7,52 @@
   <script>
     document.addEventListener("alpine:init", () => {
       const rows = JSON.parse(document.getElementById("rows").textContent);
+      const cinemaNames = {{ cinema_names | tojson }};
+      // Per filter: what the closed dropdown says when nothing is picked, the
+      // plural for "3 cinemas", and how to show a picked value.
+      const LABELS = {
+        cinemas: ["All cinemas", "cinemas", (id) => cinemaNames[id] || id],
+        districts: ["Any district", "districts", (d) => d],
+        languages: ["Any language", "languages", (l) => l],
+        genres: ["Any genre", "genres", (g) => g],
+      };
       Alpine.data("listing", () => ({
+        // Each filter holds any number of picked values; none picked means all.
         q: "",
-        cinema: "",
-        districts: [],  // any number of districts; none selected means all
-        language: "",
-        genre: "",
+        cinemas: [],
+        districts: [],
+        languages: [],
+        genres: [],
         visible: new Set(rows.map((r) => r.id)),
         init() {
-          for (const key of ["q", "cinema", "districts", "language", "genre"]) this.$watch(key, () => this.update());
+          for (const key of ["q", ...Object.keys(LABELS)]) this.$watch(key, () => this.update());
         },
         update() {
           const q = this.q.trim().toLowerCase();
+          const any = (picked, value) => !picked.length || picked.includes(value);
           this.visible = new Set(
             rows
-              .filter((r) => !this.cinema || r.cinema === this.cinema)
-              .filter((r) => !this.districts.length || this.districts.includes(r.district))
-              .filter((r) => !this.language || r.language === this.language)
-              .filter((r) => !this.genre || r.genres.includes(this.genre))
+              .filter((r) => any(this.cinemas, r.cinema))
+              .filter((r) => any(this.districts, r.district))
+              .filter((r) => any(this.languages, r.language))
+              // A film with several genres matches if any of them is picked.
+              .filter((r) => !this.genres.length || r.genres.some((g) => this.genres.includes(g)))
               .filter((r) => !q || r.text.includes(q))
               .map((r) => r.id)
           );
         },
-        get active() {
-          return Boolean(this.q || this.cinema || this.districts.length || this.language || this.genre);
+        label(key) {
+          const [none, plural, show] = LABELS[key];
+          const picked = this[key];
+          if (!picked.length) return none;
+          return picked.length <= 2 ? picked.map(show).join(", ") : `${picked.length} ${plural}`;
         },
-        get districtLabel() {
-          const d = this.districts;
-          if (!d.length) return "Any district";
-          return d.length <= 2 ? d.join(", ") : `${d.length} districts`;
+        get active() {
+          return Boolean(this.q) || Object.keys(LABELS).some((key) => this[key].length);
         },
         reset() {
-          this.q = this.cinema = this.language = this.genre = "";
-          this.districts = [];
+          this.q = "";
+          for (const key of Object.keys(LABELS)) this[key] = [];
         },
         dayVisible(day) {
           return rows.some((r) => r.day === day && this.visible.has(r.id));
@@ -51,36 +64,16 @@
 {% endblock %}
 
 {% block content %}
+{% from "_multiselect.html" import multiselect %}
 <div x-data="listing">
   {# No role="search": Pico turns such forms into a joined pill-shaped group,
      which clashes with the spaced-out filter row. #}
   <form class="filters" aria-label="Filter screenings" x-cloak @submit.prevent>
     <input type="search" x-model="q" placeholder="Search title or director" aria-label="Search title or director">
-    <select x-model="cinema" aria-label="Cinema">
-      <option value="">All cinemas</option>
-      {% for c in cinemas %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
-    </select>
-    {% if districts %}
-    {# Pico's dropdown: looks like a select, but holds checkboxes for several districts. #}
-    <details class="dropdown districts" @click.outside="$el.open = false">
-      <summary aria-label="Districts" x-text="districtLabel">Any district</summary>
-      <ul>
-        {% for d in districts %}
-        <li><label><input type="checkbox" value="{{ d }}" x-model="districts">{{ d }}</label></li>
-        {% endfor %}
-      </ul>
-    </details>
-    {% endif %}
-    <select x-model="language" aria-label="Language">
-      <option value="">Any language</option>
-      {% for lang in languages %}<option value="{{ lang }}">{{ lang }}</option>{% endfor %}
-    </select>
-    {% if genres %}
-    <select x-model="genre" aria-label="Genre">
-      <option value="">Any genre</option>
-      {% for g in genres %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
-    </select>
-    {% endif %}
+    {% if options.cinemas %}{{ multiselect("cinemas", "Cinemas", "All cinemas", options.cinemas) }}{% endif %}
+    {% if options.districts %}{{ multiselect("districts", "Districts", "Any district", options.districts) }}{% endif %}
+    {% if options.languages %}{{ multiselect("languages", "Languages", "Any language", options.languages) }}{% endif %}
+    {% if options.genres %}{{ multiselect("genres", "Genres", "Any genre", options.genres) }}{% endif %}
     <button type="button" class="reset secondary outline" @click="reset()" :disabled="!active">Reset</button>
   </form>
 

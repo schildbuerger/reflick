@@ -12,6 +12,11 @@ BERLIN = ZoneInfo("Europe/Berlin")
 NOW = datetime(2026, 10, 24, 12, 0, tzinfo=BERLIN)
 
 
+def checkboxes(index: str, model: str) -> list[str]:
+    """Values of a multi-select filter's checkboxes, in page order."""
+    return re.findall(rf'<input type="checkbox" value="([^"]+)" x-model="{model}">', index)
+
+
 def seeded_db(tmp_path):
     conn = db.connect(tmp_path / "test.sqlite")
     db.upsert_cinema(conn, CINEMA)
@@ -86,12 +91,13 @@ def test_single_page_lists_screenings_across_cinemas(tmp_path):
     assert site.build(conn, out, now=NOW) == 4
     index = (out / "index.html").read_text(encoding="utf-8")
     assert "Metropolis" in index and "Casablanca" in index
-    assert '<option value="other">Other Kino</option>' in index
-    assert '<option value="lichtblick">Lichtblick-Kino</option>' in index
-    # One checkbox per district that has screenings, in alphabetical order.
-    districts = re.findall(r'<input type="checkbox" value="([^"]+)" x-model="districts">', index)
-    assert districts == ["Mitte", "Prenzlauer Berg"]
+    # Every filter is a multi-select: one checkbox per value that occurs, sorted.
+    assert checkboxes(index, "cinemas") == ["lichtblick", "other"]
+    assert checkboxes(index, "districts") == ["Mitte", "Prenzlauer Berg"]
+    assert checkboxes(index, "languages") == ["engl. OV", "OmeU", "OV"]
+    assert "<select" not in index
     assert '"district": "Mitte"' in index
+    assert '"other": "Other Kino"' in index  # names for the closed cinema dropdown's label
 
 
 def test_genres_from_omdb_are_shown_and_filterable(tmp_path):
@@ -102,7 +108,7 @@ def test_genres_from_omdb_are_shown_and_filterable(tmp_path):
     site.build(conn, out, now=NOW)
     index = (out / "index.html").read_text(encoding="utf-8")
     assert "Michael Curtiz · 102 min · Drama, Romance" in index
-    assert '<option value="Romance">Romance</option>' in index
+    assert checkboxes(index, "genres") == ["Drama", "Romance"]
     assert '"genres": ["Drama", "Romance"]' in index
 
 
