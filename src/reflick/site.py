@@ -11,6 +11,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -73,6 +74,12 @@ def by_day(items: list[Item]) -> list[tuple[date, list[Item]]]:
 
 def day_name(day: date) -> str:
     return f"{WEEKDAYS[day.weekday()]} {day.day} {MONTHS[day.month - 1]}"
+
+
+def maps_url(cinema: Cinema) -> str:
+    """Google Maps search for the cinema (Maps URLs API, no key needed)."""
+    query = urlencode({"api": 1, "query": f"{cinema.name}, {cinema.address}"})
+    return f"https://www.google.com/maps/search/?{query}"
 
 
 def make_item(
@@ -166,6 +173,7 @@ def _environment() -> Environment:
         lstrip_blocks=True,
     )
     env.filters["day_name"] = day_name
+    env.filters["maps_url"] = maps_url
     return env
 
 

@@ -43,6 +43,13 @@ def test_build_writes_index_film_pages_and_calendar(tmp_path):
     assert 'href="https://lichtblick-kino.org/casablanca/"' in index
     assert "kinoheld" not in index
     assert not (out / "film").exists()
+    # The cinema name links to Google Maps, with a pin icon in front.
+    maps = (
+        "https://www.google.com/maps/search/?api=1&amp;query="
+        "Lichtblick-Kino%2C+Kastanienallee+77%2C+10435+Berlin"
+    )
+    assert f'<a class="cinema secondary" href="{maps}"' in index
+    assert '<svg class="pin"' in index
 
     ics = (out / "reflick.ics").read_bytes().decode()
     assert ics.count("BEGIN:VEVENT") == 3
