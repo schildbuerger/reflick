@@ -73,7 +73,8 @@ def by_day(items: list[Item]) -> list[tuple[date, list[Item]]]:
 
 
 def day_name(day: date) -> str:
-    return f"{WEEKDAYS[day.weekday()]} {day.day} {MONTHS[day.month - 1]}"
+    """'Saturday, 24. October'."""
+    return f"{WEEKDAYS[day.weekday()]}, {day.day}. {MONTHS[day.month - 1]}"
 
 
 def maps_url(cinema: Cinema) -> str:

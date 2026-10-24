@@ -35,7 +35,7 @@ def test_build_writes_index_film_pages_and_calendar(tmp_path):
     assert "Casablanca" in index
     assert "Invisible People" not in index
     # Casablanca starts at 00:00 on Sunday but is listed as Saturday 24:00.
-    saturday = index.split("Saturday 24 October")[1].split("Sunday 25 October")[0]
+    saturday = index.split("<h2>Saturday, 24. October</h2>")[1].split("<h2>Sunday, 25. October</h2>")[0]
     assert "Casablanca" in saturday
     assert ">24:00</time>" in saturday
     assert "Michael Curtiz" in index
@@ -129,6 +129,11 @@ def test_title_addons_become_badges_and_verified_title_is_shown(tmp_path):
     assert "<h3>The Gold Rush</h3>" in index
     assert '<span class="badge label">Live Orchestra</span>' in index
     assert "SUMMARY:The Gold Rush (1925)" in (out / "reflick.ics").read_text(encoding="utf-8")
+
+
+def test_day_name_format():
+    assert site.day_name(date(2026, 10, 24)) == "Saturday, 24. October"
+    assert site.day_name(date(2026, 11, 1)) == "Sunday, 1. November"
 
 
 def test_past_screenings_are_not_listed(tmp_path):
