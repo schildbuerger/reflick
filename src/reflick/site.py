@@ -247,6 +247,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
         rows=rows,
         cinemas=listed_cinemas,
         updated=updated.astimezone(BERLIN) if updated else None,
+        night_cutoff_hours=NIGHT_CUTOFF // timedelta(hours=1),
     )
     (out_dir / "index.html").write_text(index, encoding="utf-8")
     (out_dir / "reflick.ics").write_text(render_ics(items, now), encoding="utf-8", newline="")

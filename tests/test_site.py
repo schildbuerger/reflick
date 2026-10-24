@@ -40,7 +40,8 @@ def test_build_writes_index_film_pages_and_calendar(tmp_path):
     assert "Casablanca" in index
     assert "Invisible People" not in index
     # Casablanca starts at 00:00 on Sunday but is listed as Saturday 24:00.
-    saturday = index.split("<h2>Saturday, 24. October</h2>")[1].split("<h2>Sunday, 25. October</h2>")[0]
+    assert """x-text="dayLabel('2026-10-24', 'Saturday, 24. October')">Saturday, 24. October</h2>""" in index
+    saturday = index.split(">Saturday, 24. October</h2>")[1].split(">Sunday, 25. October</h2>")[0]
     assert "Casablanca" in saturday
     assert ">24:00</time>" in saturday
     assert "Michael Curtiz" in index

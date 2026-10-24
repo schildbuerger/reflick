@@ -107,8 +107,10 @@ to `site/`:
 - `index.html`: a single page with all upcoming revivals across cinemas by
   day, with search, multi-select filters (cinema, district, language,
   genre) and a date strip with one chip per day. Each row's Details button
-  opens the film's page on the cinema's own website. Late shows after midnight are
-  listed under the evening before (e.g. 24:00), as cinemas do.
+  opens the film's page on the cinema's own website. Late shows after midnight
+  are listed under the evening before (e.g. 24:00), as cinemas do. The first
+  two days read "Today" and "Tomorrow", judged in the visitor's browser
+  (until 5:00 the evening before still counts as today).
 - Titles are shown without the cinemas' add-ons: "Modern Times LIVE mit
   Babylon Orchester Berlin" becomes "Modern Times" with a "Live mit Babylon
   Orchester Berlin" badge (see `src/reflick/titles.py`). When OMDb matched

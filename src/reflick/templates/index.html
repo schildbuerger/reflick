@@ -17,6 +17,7 @@
         genres: ["Any genre", "genres", (g) => g],
       };
       const FILTERS = ["q", "days", ...Object.keys(LABELS)];
+      const NIGHT_CUTOFF_MS = {{ night_cutoff_hours }} * 3600 * 1000;
       const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       Alpine.data("listing", () => ({
         // Each filter holds any number of picked values; none picked means all.
@@ -75,13 +76,13 @@
           const list = this.$refs?.list;
           if (list && list.getBoundingClientRect().top < 0) list.scrollIntoView({ behavior: "smooth" });
         },
-        // "Today 24. Oct" / "Tomorrow 25. Oct" instead of the weekday, judged
-        // when the page is viewed, not when it was built.
+        // "Today" and "Tomorrow" instead of the date, judged when the page is
+        // viewed, not when it was built. Until 5:00 the evening before is still
+        // "today", as late shows are listed under it.
         dayLabel(day, fallback) {
-          const today = new Date();
-          const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-          const word = day === isoDay(today) ? "Today" : day === isoDay(tomorrow) ? "Tomorrow" : null;
-          return word ? fallback.replace(/^\S+/, word) : fallback;
+          const now = new Date(Date.now() - NIGHT_CUTOFF_MS);
+          const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+          return day === isoDay(now) ? "Today" : day === isoDay(tomorrow) ? "Tomorrow" : fallback;
         },
         scrollDays(direction) {
           const strip = this.$refs.days;
@@ -147,7 +148,7 @@
 
     {% for day, items in days %}
     <section class="day" x-show="dayVisible('{{ day.isoformat() }}')">
-      <h2>{{ day | day_name }}</h2>
+      <h2 x-text="dayLabel('{{ day.isoformat() }}', '{{ day | day_name }}')">{{ day | day_name }}</h2>
       {% for item in items %}
       {% include "_screening.html" %}
       {% endfor %}
