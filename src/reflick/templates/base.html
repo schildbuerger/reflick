@@ -13,8 +13,11 @@
     header.site h1 { margin: 0; font-size: 1.75rem; }
     header.site h1 a { text-decoration: none; color: inherit; }
     header.site p { margin: 0; color: var(--pico-muted-color); }
-    .filters { display: grid; gap: 0.5rem; grid-template-columns: 2fr repeat(auto-fit, minmax(8rem, 1fr)); margin-block: 1rem; }
-    .filters > * { margin: 0; }
+    /* One row: search twice as wide as each select, however many selects there are. */
+    .filters { display: flex; gap: 0.5rem; margin-block: 1rem; }
+    .filters > * { margin: 0; min-width: 0; }
+    .filters input[type=search] { flex: 2 1 0; }
+    .filters select { flex: 1 1 0; }
     .day h2 {
       position: sticky; top: 0; z-index: 1;
       margin: 0; padding-block: 0.75rem 0.5rem;
@@ -40,8 +43,9 @@
     footer.site { margin-block: 2rem; font-size: 0.8rem; color: var(--pico-muted-color); }
     [x-cloak] { display: none !important; }
     @media (max-width: 576px) {
-      .filters { grid-template-columns: 1fr 1fr; }
-      .filters input[type=search] { grid-column: 1 / -1; }
+      .filters { flex-wrap: wrap; }
+      .filters input[type=search] { flex-basis: 100%; }
+      .filters select { flex-basis: 6rem; }  /* three selects still fit a 375px phone */
       .screening { grid-template-columns: 3rem 1fr; }
     }
   </style>
