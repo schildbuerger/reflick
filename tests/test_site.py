@@ -108,6 +108,9 @@ def test_genres_from_omdb_are_shown_and_filterable(tmp_path):
     site.build(conn, out, now=NOW)
     index = (out / "index.html").read_text(encoding="utf-8")
     assert "Michael Curtiz · 102 min · Drama, Romance" in index
+    # Matched films link to Letterboxd via their IMDb id; unmatched ones don't.
+    assert 'href="https://letterboxd.com/imdb/tt0034583/"' in index
+    assert index.count('class="letterboxd"') == 1
     assert checkboxes(index, "genres") == ["Drama", "Romance"]
     assert '"genres": ["Drama", "Romance"]' in index
 

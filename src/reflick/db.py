@@ -199,12 +199,15 @@ class FilmInfo:
 
     title: str
     genres: list[str]
+    imdb_id: str | None = None
 
 
 def film_info(conn: sqlite3.Connection) -> dict[tuple[str, int], FilmInfo]:
     """Matched films, keyed like film_matches."""
     return {
-        key: FilmInfo(title=row["matched_title"], genres=json.loads(row["genres"]))
+        key: FilmInfo(
+            title=row["matched_title"], genres=json.loads(row["genres"]), imdb_id=row["imdb_id"]
+        )
         for key, row in film_matches(conn).items()
         if row["imdb_id"]
     }

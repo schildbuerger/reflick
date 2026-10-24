@@ -42,6 +42,12 @@ class Item:
     title: str  # film title without cinema add-ons, verified on OMDb if matched
     labels: list[str]  # series/re-release labels and title add-ons, shown as badges
     genres: list[str]  # from OMDb, empty if the film wasn't matched
+    imdb_id: str | None = None  # from OMDb, if matched
+
+    @property
+    def letterboxd_url(self) -> str | None:
+        """Letterboxd's IMDb-id address, which redirects to the film's page there."""
+        return f"https://letterboxd.com/imdb/{self.imdb_id}/" if self.imdb_id else None
 
     @property
     def programme_day(self) -> date:
@@ -101,6 +107,7 @@ def make_item(
         title=display_title(base_title, info.title if info else None),
         labels=[*revival_labels(s), *addons],
         genres=info.genres if info else [],
+        imdb_id=info.imdb_id if info else None,
     )
 
 

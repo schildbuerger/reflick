@@ -5,8 +5,21 @@
   <time datetime="{{ item.start.isoformat() }}">{{ item.time_label }}</time>
   <div>
     <h3>{{ item.title }}</h3>
-    {% if item.facts or item.genres %}
-    <p class="muted">{{ item.facts }}{% if item.facts and item.genres %} · {% endif %}{{ item.genres | join(", ") }}</p>
+    {% if item.facts or item.genres or item.letterboxd_url %}
+    <p class="muted">
+      {{- item.facts }}{% if item.facts and item.genres %} · {% endif %}{{ item.genres | join(", ") -}}
+      {% if item.letterboxd_url %}
+      {# Letterboxd's three dots, as a small link at the end of the facts line. #}
+      <a class="letterboxd" href="{{ item.letterboxd_url }}" target="_blank" rel="noopener"
+         title="{{ item.title }} on Letterboxd" aria-label="{{ item.title }} on Letterboxd">
+        <svg viewBox="0 0 30 10" aria-hidden="true" focusable="false">
+          <circle cx="5" cy="5" r="4.2" fill="#ff8000"/>
+          <circle cx="15" cy="5" r="4.2" fill="#00e054"/>
+          <circle cx="25" cy="5" r="4.2" fill="#40bcf4"/>
+        </svg>
+      </a>
+      {%- endif %}
+    </p>
     {% endif %}
     <p>
       <a class="cinema secondary" href="{{ item.cinema | maps_url }}" target="_blank" rel="noopener"
