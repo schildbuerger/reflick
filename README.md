@@ -82,6 +82,12 @@ to `site/`:
   day, with search, cinema and language filters. Each title links to the
   film's page on the cinema's own website. Late shows after midnight are
   listed under the evening before (e.g. 24:00), as cinemas do.
+- Titles are shown without the cinemas' add-ons: "Modern Times LIVE mit
+  Babylon Orchester Berlin" becomes "Modern Times" with a "Live mit Babylon
+  Orchester Berlin" badge (see `src/reflick/titles.py`). When OMDb matched
+  the film and its title differs in substance, OMDb's title is shown
+  ("Chaplin's The Gold Rush" → "The Gold Rush"); the database keeps the
+  cinema's original title.
 - `reflick.ics`: a calendar feed to subscribe to.
 
 Templates live in `src/reflick/templates/` (Jinja2). Styling comes from

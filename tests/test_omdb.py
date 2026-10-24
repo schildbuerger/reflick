@@ -149,7 +149,9 @@ def test_enrich_caches_matches_and_misses(tmp_path):
 
     result = enrich.enrich(conn, client, now)
     assert (result.matched, result.missed) == (1, 1)  # New Film is no revival: not looked up
-    assert db.genres_by_film(conn) == {("casablanca", 1942): ["Drama", "Romance", "War"]}
+    assert db.film_info(conn) == {
+        ("casablanca", 1942): db.FilmInfo("Casablanca", ["Drama", "Romance", "War"])
+    }
 
     # Second run: both are cached, no requests.
     again = enrich.enrich(conn, fake_client(by_title({})), now)

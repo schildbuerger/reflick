@@ -18,6 +18,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from reflick import db
 from reflick.models import Cinema, RawScreening
 from reflick.revival import is_revival, revival_labels
+from reflick.titles import display_title, split_addons
 
 BERLIN = ZoneInfo("Europe/Berlin")
 DEFAULT_RUNTIME = timedelta(minutes=120)
@@ -37,7 +38,8 @@ class Item:
     screening: RawScreening
     cinema: Cinema
     start: datetime  # in Europe/Berlin
-    labels: list[str]
+    title: str  # film title without cinema add-ons, verified on OMDb if matched
+    labels: list[str]  # series/re-release labels and title add-ons, shown as badges
     genres: list[str]  # from OMDb, empty if the film wasn't matched
 
     @property
@@ -73,10 +75,26 @@ def day_name(day: date) -> str:
     return f"{WEEKDAYS[day.weekday()]} {day.day} {MONTHS[day.month - 1]}"
 
 
+def make_item(
+    i: int, s: RawScreening, cinemas: dict[str, Cinema], films: dict[tuple[str, int], db.FilmInfo]
+) -> Item:
+    base_title, addons = split_addons(s.title)
+    info = films.get((db.title_key(s.title), s.year)) if s.year else None
+    return Item(
+        id=i,
+        screening=s,
+        cinema=cinemas[s.cinema_id],
+        start=s.start.astimezone(BERLIN),
+        title=display_title(base_title, info.title if info else None),
+        labels=[*revival_labels(s), *addons],
+        genres=info.genres if info else [],
+    )
+
+
 def collect(
     screenings: list[RawScreening],
     cinemas: dict[str, Cinema],
-    genres: dict[tuple[str, int], list[str]],
+    films: dict[tuple[str, int], db.FilmInfo],
     now: datetime,
 ) -> list[Item]:
     """Upcoming revivals across all cinemas, in start order."""
@@ -84,17 +102,7 @@ def collect(
         (s for s in screenings if s.start >= now and is_revival(s, now.date())),
         key=lambda s: (s.start, s.title),
     )
-    return [
-        Item(
-            id=i,
-            screening=s,
-            cinema=cinemas[s.cinema_id],
-            start=s.start.astimezone(BERLIN),
-            labels=revival_labels(s),
-            genres=genres.get((db.title_key(s.title), s.year), []) if s.year else [],
-        )
-        for i, s in enumerate(upcoming)
-    ]
+    return [make_item(i, s, cinemas, films) for i, s in enumerate(upcoming)]
 
 
 def _ics_escape(text: str) -> str:
@@ -132,7 +140,7 @@ def render_ics(items: list[Item], now: datetime) -> str:
         s = item.screening
         runtime = timedelta(minutes=s.runtime_min) if s.runtime_min else DEFAULT_RUNTIME
         uid_source = f"{s.cinema_id}|{s.start.isoformat()}|{s.title}"
-        title = f"{s.title} ({s.year})" if s.year else s.title
+        title = f"{item.title} ({s.year})" if s.year else item.title
         description = " · ".join(p for p in (item.facts, s.language, *item.labels) if p)
         lines += [
             "BEGIN:VEVENT",
@@ -165,7 +173,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     """Write the site to out_dir. Returns the number of screenings listed."""
     now = now or datetime.now(BERLIN)
     cinemas = db.cinemas(conn)
-    items = collect(db.latest_screenings(conn), cinemas, db.genres_by_film(conn), now)
+    items = collect(db.latest_screenings(conn), cinemas, db.film_info(conn), now)
     updated = db.last_update(conn)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -179,7 +187,8 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
             "language": i.screening.language or "",
             "genres": i.genres,
             "text": " ".join(
-                filter(None, (i.screening.title, i.screening.director, i.screening.series))
+                # Both titles, so "Gold Rush" and "Orchester" both find the Chaplin show.
+                filter(None, (i.title, i.screening.title, i.screening.director, i.screening.series))
             ).casefold(),
         }
         for i in items

@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 
 import httpx
 
+from reflick.titles import split_addons
+
 API_URL = "https://www.omdbapi.com/"
 MAX_SEARCH_CANDIDATES = 3
 
@@ -94,16 +96,17 @@ def _match(data: dict) -> Match:
 
 
 def title_variants(title: str) -> list[str]:
-    """The title plus versions without event extras, most specific first.
+    """Titles to search for, most likely first: without the cinema's add-ons
+    (see reflick.titles), then looser guesses that are only tried on OMDb and
+    never shown, since a match still has to pass the year and director check.
 
-    'Modern Times LIVE mit Babylon Orchester Berlin' -> [..., 'Modern Times']
-    "The Exorcist: Director's Cut" -> [..., 'The Exorcist']
+    'Modern Times LIVE mit Babylon Orchester Berlin' -> ['Modern Times', ...]
+    "Chaplin's The Gold Rush with LIVE Orchestra" -> [..., 'The Gold Rush']
     """
-    variants = [title]
+    base, _ = split_addons(title)
+    variants = [base] if base == title else [base, title]
     cuts = [
-        r"(?i)[\s:]+(?:(?:with|mit)\s+)?live\b.*$",  # "... LIVE mit Babylon Orchester"
-        r"\s+-\s+.*$",  # "... - mit Gästen!"
-        r":\s+(?:Director's Cut|Premiere\b.*)$",
+        r"\s+-\s+.*$",  # "Nordstream - Die Sprengung" -> "Nordstream"
         r"^\w+'s\s+",  # "Chaplin's The Gold Rush"
         r"^[^:]+:\s+",  # "Huang Shuqin: Woman Demon Human"
     ]

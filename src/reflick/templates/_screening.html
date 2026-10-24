@@ -3,7 +3,7 @@
 <div class="screening" x-show="visible.has({{ item.id }})">
   <time datetime="{{ item.start.isoformat() }}">{{ item.time_label }}</time>
   <div>
-    <h3><a href="{{ s.source_url }}" target="_blank" rel="noopener">{{ s.title }}</a></h3>
+    <h3><a href="{{ s.source_url }}" target="_blank" rel="noopener">{{ item.title }}</a></h3>
     {% if item.facts or item.genres %}
     <p class="muted">{{ item.facts }}{% if item.facts and item.genres %} · {% endif %}{{ item.genres | join(", ") }}</p>
     {% endif %}

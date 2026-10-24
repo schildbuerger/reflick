@@ -2,7 +2,7 @@
 
 import json
 import sqlite3
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -140,10 +140,18 @@ def save_film_match(
     conn.commit()
 
 
-def genres_by_film(conn: sqlite3.Connection) -> dict[tuple[str, int], list[str]]:
-    """Genres of matched films, keyed like film_matches."""
+@dataclass(frozen=True)
+class FilmInfo:
+    """What OMDb confirmed about a film."""
+
+    title: str
+    genres: list[str]
+
+
+def film_info(conn: sqlite3.Connection) -> dict[tuple[str, int], FilmInfo]:
+    """Matched films, keyed like film_matches."""
     return {
-        key: json.loads(row["genres"])
+        key: FilmInfo(title=row["matched_title"], genres=json.loads(row["genres"]))
         for key, row in film_matches(conn).items()
         if row["imdb_id"]
     }

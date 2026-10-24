@@ -87,6 +87,31 @@ def test_genres_from_omdb_are_shown_and_filterable(tmp_path):
     assert '"genres": ["Drama", "Romance"]' in index
 
 
+def test_title_addons_become_badges_and_verified_title_is_shown(tmp_path):
+    conn = db.connect(tmp_path / "test.sqlite")
+    db.upsert_cinema(conn, CINEMA)
+    run = db.start_run(conn, CINEMA.id)
+    db.save_screenings(conn, run, [
+        RawScreening(
+            cinema_id=CINEMA.id,
+            title="Chaplin's The Gold Rush with LIVE Orchestra",
+            start=datetime(2026, 10, 24, 20, 0, tzinfo=BERLIN),
+            source_url="https://x/",
+            year=1925,
+        )
+    ])
+    db.finish_run(conn, run, "ok")
+    db.save_film_match(
+        conn, "Chaplin's The Gold Rush with LIVE Orchestra", 1925, "tt0015864", "The Gold Rush", []
+    )
+    out = tmp_path / "site"
+    site.build(conn, out, now=NOW)
+    index = (out / "index.html").read_text(encoding="utf-8")
+    assert 'rel="noopener">The Gold Rush</a>' in index
+    assert '<span class="badge label">Live Orchestra</span>' in index
+    assert "SUMMARY:The Gold Rush (1925)" in (out / "reflick.ics").read_text(encoding="utf-8")
+
+
 def test_past_screenings_are_not_listed(tmp_path):
     later = datetime(2026, 10, 26, 12, 0, tzinfo=BERLIN)
     assert site.build(seeded_db(tmp_path), tmp_path / "site", now=later) == 0
