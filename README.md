@@ -50,7 +50,7 @@ python3 -m venv .venv
 .venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
 
-Cinemas covered so far: Lichtblick-Kino.
+Cinemas covered so far: Babylon, Lichtblick-Kino.
 
 ### Website
 

@@ -1,15 +1,23 @@
 """Common pieces for cinema adapters."""
 
+import re
 import time
 from abc import ABC, abstractmethod
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
+from zoneinfo import ZoneInfo
 
 import httpx
 
 from reflick.models import Cinema, RawScreening
 
 USER_AGENT = "reflick/0.1 (+revival screenings aggregator for Berlin)"
+BERLIN = ZoneInfo("Europe/Berlin")
+
+
+def clean(text: str) -> str:
+    """Collapse whitespace, including nbsp and thin spaces."""
+    return re.sub(r"\s+", " ", text.replace("\xa0", " ").replace(" ", " ")).strip()
 
 
 class Fetcher:

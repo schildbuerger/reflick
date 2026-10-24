@@ -7,14 +7,12 @@ full list of showtimes with kinoheld ticket ids.
 
 import re
 from datetime import date, datetime, time, timedelta
-from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup, Tag
 
-from reflick.adapters.base import Adapter, Fetcher
+from reflick.adapters.base import BERLIN, Adapter, Fetcher, clean
 from reflick.models import Cinema, RawScreening
 
-BERLIN = ZoneInfo("Europe/Berlin")
 BASE_URL = "https://lichtblick-kino.org"
 PROGRAMME_URL = f"{BASE_URL}/programm/"
 TICKET_URL = "https://www.kinoheld.de/kino/berlin/lichtblick-kino-berlin/show/{id}"
@@ -26,11 +24,6 @@ CINEMA = Cinema(
     neighbourhood="Prenzlauer Berg",
     website=BASE_URL,
 )
-
-
-def clean(text: str) -> str:
-    """Collapse whitespace, including the site's nbsp and thin spaces."""
-    return re.sub(r"\s+", " ", text.replace("\xa0", " ").replace(" ", " ")).strip()
 
 
 def parse_programme(html: str) -> list[str]:

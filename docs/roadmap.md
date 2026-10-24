@@ -16,7 +16,7 @@ each scraper will be.
 | --- | --- | --- | --- | --- |
 | Arsenal | arsenal-berlin.de/kalender/ | HTML (TYPO3), no JSON-LD on homepage | robots.txt returns 404 | |
 | Zeughauskino | | | | |
-| Babylon Mitte | | | | |
+| Babylon Mitte | babylonberlin.eu/programm | HTML (Joomla), no JSON-LD; whole programme on one page, one `li.mix` per screening with full timestamp | Allowed | **Adapter done.** Credit line is cut off, so film pages are read when the year is missing. Also lists theatre and readings (skipped). Server omits its intermediate certificate: Python/httpx copes, macOS curl doesn't |
 | Lichtblick-Kino | lichtblick-kino.org/programm/ | HTML (WordPress), no JSON-LD; monthly PDF too | Allowed | **Adapter done.** Film pages have credits + all showtimes; tickets via kinoheld; labels "Filmklassiker", "Wiederaufführung in 4K" |
 | Yorck group | | | | 14 cinemas, one shared programme |
 
