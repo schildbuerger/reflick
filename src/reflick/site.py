@@ -258,7 +258,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     static = files("reflick") / "static"
     (out_dir / "static").mkdir(exist_ok=True)
     for asset in static.iterdir():
-        if asset.name.endswith((".css", ".js")):
+        if asset.name.endswith((".css", ".js", ".svg")):
             (out_dir / "static" / asset.name).write_bytes(asset.read_bytes())
     return len(items)
 

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>reflick</title>
+  <rect width="64" height="64" rx="12" fill="#195a6b"/>
+  <!-- Two rewind triangles, drawn after the original 1024px logo. -->
+  <path d="M13.5 32 34.5 14v36zM29.7 32 50.7 14v36z" fill="#dcefef"/>
+</svg>

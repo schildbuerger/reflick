@@ -149,6 +149,10 @@ def test_build_serves_assets_itself_and_writes_legal_pages(tmp_path):
     assert 'href="static/pico.min.css"' in index and 'src="static/alpine.min.js"' in index
     assert (out / "static" / "pico.min.css").stat().st_size > 10_000
     assert (out / "static" / "alpine.min.js").stat().st_size > 10_000
+    # The logo, in the header and as the favicon.
+    assert (out / "static" / "logo.svg").exists()
+    assert '<img src="static/logo.svg" alt="">reflick</a>' in index
+    assert '<link rel="icon" href="static/logo.svg" type="image/svg+xml">' in index
     assert 'href="impressum.html"' in index and 'href="datenschutz.html"' in index
     impressum = (out / "impressum.html").read_text(encoding="utf-8")
     assert '<html lang="de">' in impressum

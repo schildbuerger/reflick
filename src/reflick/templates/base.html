@@ -7,6 +7,7 @@
   <meta name="description" content="Classics, restorations and re-releases in Berlin cinemas, collected in one place.">
   {# Served from the site itself, not a CDN, so browsers contact no third party. #}
   <link rel="stylesheet" href="static/pico.min.css">
+  <link rel="icon" href="static/logo.svg" type="image/svg+xml">
   <link rel="alternate" type="text/calendar" title="reflick calendar" href="reflick.ics">
   <style>
     :root {
@@ -23,6 +24,7 @@
     header.site { padding-block: 1.5rem 0.5rem; }
     header.site h1 { margin: 0; font-size: 1.75rem; }
     header.site h1 a { text-decoration: none; color: inherit; }
+    header.site h1 img { height: 1.2em; margin-right: 0.4em; vertical-align: -0.2em; }
     header.site p { margin: 0; color: var(--pico-muted-color); }
     /* Filters and date strip, sticky so they stay in view while scrolling the list. */
     .filterbar {
@@ -141,7 +143,7 @@
 </head>
 <body>
   <header class="site container">
-    <h1><a href="./">reflick</a></h1>
+    <h1><a href="./"><img src="static/logo.svg" alt="">reflick</a></h1>
     <p>Classics, restorations and re-releases in Berlin cinemas.</p>
   </header>
   <main class="container">
