@@ -147,16 +147,44 @@ def test_parse_film_page():
     assert parse_film_page(next_data(fixture("film-the-texas-chainsaw-massacre.html")))["year"] == 1974
 
 
-def test_film_page_without_film_data_is_a_warning_and_not_cached():
-    broken = '<script id="__NEXT_DATA__" type="application/json">{"props": {"pageProps": {"key": "x"}}}</script>'
+BROKEN_FILM_PAGE = (
+    '<script id="__NEXT_DATA__" type="application/json">{"props": {"pageProps": {"key": "x"}}}</script>'
+)
 
+
+def no_retry_delay() -> YorckAdapter:
+    adapter = YorckAdapter()
+    adapter.retry_delay_s = 0
+    return adapter
+
+
+def test_film_page_without_film_data_is_a_warning_and_not_cached():
     class Flaky(FakeFetcher):
         def get(self, url):
-            return broken if url == f"{BASE_URL}/filme/angel-heart" else super().get(url)
+            if url == f"{BASE_URL}/filme/angel-heart":
+                self.requested.append(url)
+                return BROKEN_FILM_PAGE
+            return super().get(url)
 
     cache = MemoryCache()
-    programme = YorckAdapter().fetch(Flaky(), cache)
+    fetcher = Flaky()
+    programme = no_retry_delay().fetch(fetcher, cache)
+    assert fetcher.requested.count(f"{BASE_URL}/filme/angel-heart") == 3
     assert any("film angel-heart" in w for w in programme.warnings)
     assert ("yorck-film", "angel-heart") not in cache.data
     [s, *_] = by_title(programme, "Angel Heart")
     assert s.year == 1987  # falls back to the German release year
+
+
+def test_film_page_without_film_data_is_retried():
+    class FlakyOnce(FakeFetcher):
+        def get(self, url):
+            if url == f"{BASE_URL}/filme/angel-heart" and url not in self.requested:
+                self.requested.append(url)
+                return BROKEN_FILM_PAGE
+            return super().get(url)
+
+    programme = no_retry_delay().fetch(FlakyOnce(), MemoryCache())
+    assert programme.warnings == []
+    [s, *_] = by_title(programme, "Angel Heart")
+    assert s.director == "Alan Parker"

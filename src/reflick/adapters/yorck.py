@@ -16,6 +16,7 @@ yorck.de is a Next.js site: every page embeds its data as JSON in
 
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
@@ -35,6 +36,7 @@ SKIP_SPECIAL_CATEGORIES = {"Lesung", "Bühne", "Festival"}
 SERIES_TYPES = {"Film Series", "Film Special"}
 FILM_CACHE = "yorck-film"
 FILM_CACHE_AGE = timedelta(days=30)
+FILM_PAGE_ATTEMPTS = 3
 
 
 def next_data(html: str) -> dict:
@@ -188,6 +190,7 @@ def to_screening(s: Session, cinema: Cinema, credits: dict) -> RawScreening:
 
 class YorckAdapter(Adapter):
     id = "yorck"
+    retry_delay_s = 5.0
 
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
         cache = cache or Cache()
@@ -225,10 +228,17 @@ class YorckAdapter(Adapter):
     def _credits(self, fetcher: Fetcher, cache: Cache, slug: str, warnings: list[str]) -> dict:
         if (cached := cache.get(FILM_CACHE, slug, FILM_CACHE_AGE)) is not None:
             return cached
-        try:
-            credits = parse_film_page(next_data(fetcher.get(f"{BASE_URL}/filme/{slug}")))
-        except (httpx.HTTPError, ValueError, KeyError) as exc:
-            warnings.append(f"film {slug}: {exc!r}")
+        # Pages served without data under load usually come back whole a little later.
+        for attempt in range(FILM_PAGE_ATTEMPTS):
+            if attempt:
+                time.sleep(self.retry_delay_s)
+            try:
+                credits = parse_film_page(next_data(fetcher.get(f"{BASE_URL}/filme/{slug}")))
+                break
+            except (httpx.HTTPError, ValueError, KeyError) as exc:
+                error = exc
+        else:
+            warnings.append(f"film {slug}: {error!r} ({FILM_PAGE_ATTEMPTS} attempts)")
             return {}
         if credits["year"] is not None:  # incomplete credits are fetched again next run
             cache.set(FILM_CACHE, slug, credits)
