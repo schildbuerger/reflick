@@ -11,13 +11,6 @@ have to check monthly guides (e.g. The Berliner's film events column), each
 repertory cinema's own programme, or general listings such as kino.de, which
 mix revivals in with new releases.
 
-## Name
-
-"Reflick" combines "re" with the old slang "flicks" for films. It's a working
-title. The domain is not registered yet, and availability is unconfirmed
-(check `reflick.de` at denic.de). Other names that showed no existing web
-presence: rekino, nachbild, wiederkino.
-
 ## What counts as a revival
 
 Starting rule: a film's original release year is at least 5 years ago, **or**
@@ -152,14 +145,3 @@ One-time setup:
 For a custom domain, add a `CNAME` file containing the domain to the site
 output, point the domain's DNS at GitHub Pages, and enable "Enforce HTTPS"
 in the Pages settings.
-
-## Open decisions
-
-- [x] Tech stack: Python
-- [ ] Final name and domain (`.de` is cheapest, about €5–10/year; `.berlin`
-      fits but costs about €40–60/year)
-- [x] Hosting: GitHub Pages, built daily by GitHub Actions
-
-## Docs
-
-- [Roadmap](docs/roadmap.md): the steps from scope to launch
