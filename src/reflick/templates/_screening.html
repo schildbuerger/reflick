@@ -1,9 +1,10 @@
-{# One screening row. Expects `item`; the title links to the film's page on the cinema's website. #}
+{# One screening row. Expects `item`; the button at the end opens the film's
+   page on the cinema's website. #}
 {% set s = item.screening %}
 <div class="screening" x-show="visible.has({{ item.id }})">
   <time datetime="{{ item.start.isoformat() }}">{{ item.time_label }}</time>
   <div>
-    <h3><a href="{{ s.source_url }}" target="_blank" rel="noopener">{{ item.title }}</a></h3>
+    <h3>{{ item.title }}</h3>
     {% if item.facts or item.genres %}
     <p class="muted">{{ item.facts }}{% if item.facts and item.genres %} · {% endif %}{{ item.genres | join(", ") }}</p>
     {% endif %}
@@ -18,4 +19,6 @@
       {% for label in item.labels %}<span class="badge label">{{ label }}</span>{% endfor %}
     </p>
   </div>
+  <a class="details" role="button" href="{{ s.source_url }}" target="_blank" rel="noopener"
+     aria-label="{{ item.title }} on the {{ item.cinema.name }} website">Details</a>
 </div>

@@ -41,7 +41,13 @@ def test_build_writes_index_film_pages_and_calendar(tmp_path):
     assert "Michael Curtiz" in index
     assert "Wiederaufführung in 4K" in index
     # Titles link to the film's page on the cinema's site; no ticket links.
-    assert 'href="https://lichtblick-kino.org/casablanca/"' in index
+    # A "Details" button at the end of the row opens the cinema's film page;
+    # the title itself is plain text.
+    assert (
+        '<a class="details" role="button" href="https://lichtblick-kino.org/casablanca/"'
+        in index
+    )
+    assert "<h3>Casablanca</h3>" in index
     assert "kinoheld" not in index
     assert not (out / "film").exists()
     # The cinema name links to Google Maps, with a pin icon in front.
@@ -120,7 +126,7 @@ def test_title_addons_become_badges_and_verified_title_is_shown(tmp_path):
     out = tmp_path / "site"
     site.build(conn, out, now=NOW)
     index = (out / "index.html").read_text(encoding="utf-8")
-    assert 'rel="noopener">The Gold Rush</a>' in index
+    assert "<h3>The Gold Rush</h3>" in index
     assert '<span class="badge label">Live Orchestra</span>' in index
     assert "SUMMARY:The Gold Rush (1925)" in (out / "reflick.ics").read_text(encoding="utf-8")
 
