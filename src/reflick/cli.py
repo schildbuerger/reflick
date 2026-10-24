@@ -1,0 +1,82 @@
+"""Command line: `reflick scrape` and `reflick list`."""
+
+import argparse
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+from reflick import db
+from reflick.adapters import ADAPTERS
+from reflick.adapters.base import Fetcher
+from reflick.revival import is_revival
+
+DEFAULT_DB = Path("data/reflick.sqlite")
+BERLIN = ZoneInfo("Europe/Berlin")
+
+
+def scrape(args: argparse.Namespace) -> int:
+    conn = db.connect(args.db)
+    fetcher = Fetcher()
+    cinema_ids = args.cinema or list(ADAPTERS)
+    problems = 0
+    for cinema_id in cinema_ids:
+        adapter = ADAPTERS[cinema_id]()
+        db.upsert_cinema(conn, adapter.cinema)
+        run_id = db.start_run(conn, cinema_id)
+        try:
+            screenings = adapter.fetch(fetcher)
+        except Exception as exc:  # one broken cinema must not stop the others
+            db.finish_run(conn, run_id, "failed", repr(exc))
+            print(f"{cinema_id}: FAILED: {exc!r}", file=sys.stderr)
+            problems += 1
+            continue
+        db.save_screenings(conn, run_id, screenings)
+        if not screenings:
+            # A scraper that suddenly finds nothing has most likely broken.
+            db.finish_run(conn, run_id, "empty")
+            print(f"{cinema_id}: WARNING: 0 screenings", file=sys.stderr)
+            problems += 1
+            continue
+        db.finish_run(conn, run_id, "ok")
+        revivals = sum(is_revival(s) for s in screenings)
+        print(f"{cinema_id}: {len(screenings)} screenings, {revivals} revivals")
+    return 1 if problems else 0
+
+
+def list_screenings(args: argparse.Namespace) -> int:
+    conn = db.connect(args.db)
+    now = datetime.now(BERLIN)
+    until = now + timedelta(days=args.days)
+    for s in db.latest_screenings(conn):
+        if not now <= s.start < until:
+            continue
+        if not args.all and not is_revival(s):
+            continue
+        facts = ", ".join(str(f) for f in (s.country, s.year, s.director) if f)
+        lang = f" ({s.language})" if s.language else ""
+        line = f"{s.start:%a %d.%m. %H:%M}  {s.cinema_id:<12} {s.title}{lang}"
+        print(f"{line}  [{facts}]" if facts else line)
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="reflick")
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB)
+    sub = parser.add_subparsers(required=True)
+
+    p_scrape = sub.add_parser("scrape", help="fetch programmes into the database")
+    p_scrape.add_argument("--cinema", action="append", choices=sorted(ADAPTERS))
+    p_scrape.set_defaults(func=scrape)
+
+    p_list = sub.add_parser("list", help="show upcoming revival screenings")
+    p_list.add_argument("--days", type=int, default=7)
+    p_list.add_argument("--all", action="store_true", help="include non-revivals")
+    p_list.set_defaults(func=list_screenings)
+
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -35,9 +35,25 @@ the cinema labels it as a re-release. Typical labels in German programmes:
 - Every screening links to the cinema's own ticket page. We list facts (title,
   time, venue) and don't copy descriptions, images or trailers.
 
+## Development
+
+Python 3.12+. One adapter per cinema lives in `src/reflick/adapters/`; each
+scrape run is stored as a snapshot in a local SQLite database
+(`data/reflick.sqlite`).
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/pytest
+.venv/bin/reflick scrape          # fetch all cinemas
+.venv/bin/reflick list --days 14  # upcoming revivals (--all for everything)
+```
+
+Cinemas covered so far: Lichtblick-Kino.
+
 ## Open decisions
 
-- [ ] Tech stack (Python or JavaScript)
+- [x] Tech stack: Python
 - [ ] Final name and domain (`.de` is cheapest, about €5–10/year; `.berlin`
       fits but costs about €40–60/year)
 - [ ] Hosting: static site plus a daily scheduled job (VPS cron or GitHub

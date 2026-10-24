@@ -1,0 +1,56 @@
+"""Common pieces for cinema adapters."""
+
+import time
+from abc import ABC, abstractmethod
+from urllib.parse import urlsplit
+from urllib.robotparser import RobotFileParser
+
+import httpx
+
+from reflick.models import Cinema, RawScreening
+
+USER_AGENT = "reflick/0.1 (+revival screenings aggregator for Berlin)"
+
+
+class Fetcher:
+    """HTTP client that honours robots.txt and waits between requests."""
+
+    def __init__(self, delay_s: float = 1.0, client: httpx.Client | None = None):
+        self.delay_s = delay_s
+        self.client = client or httpx.Client(
+            headers={"User-Agent": USER_AGENT},
+            follow_redirects=True,
+            timeout=20,
+        )
+        self._robots: dict[str, RobotFileParser] = {}
+        self._last_request = 0.0
+
+    def get(self, url: str) -> str:
+        if not self._allowed(url):
+            raise PermissionError(f"robots.txt disallows {url}")
+        wait = self._last_request + self.delay_s - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        response = self.client.get(url)
+        self._last_request = time.monotonic()
+        response.raise_for_status()
+        return response.text
+
+    def _allowed(self, url: str) -> bool:
+        parts = urlsplit(url)
+        origin = f"{parts.scheme}://{parts.netloc}"
+        if origin not in self._robots:
+            parser = RobotFileParser()
+            response = self.client.get(f"{origin}/robots.txt")
+            parser.parse(response.text.splitlines() if response.is_success else [])
+            self._robots[origin] = parser
+        return self._robots[origin].can_fetch(USER_AGENT, url)
+
+
+class Adapter(ABC):
+    """Scrapes one cinema's programme into RawScreenings."""
+
+    cinema: Cinema
+
+    @abstractmethod
+    def fetch(self, fetcher: Fetcher) -> list[RawScreening]: ...

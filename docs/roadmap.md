@@ -14,10 +14,10 @@ each scraper will be.
 
 | Cinema | Programme URL | Format (JSON-LD / API / iCal / PDF / HTML) | robots.txt / terms OK? | Notes |
 | --- | --- | --- | --- | --- |
-| Arsenal | | | | |
+| Arsenal | arsenal-berlin.de/kalender/ | HTML (TYPO3), no JSON-LD on homepage | robots.txt returns 404 | |
 | Zeughauskino | | | | |
 | Babylon Mitte | | | | |
-| Lichtblick-Kino | | | | Marks restorations as "Wiederaufführung in 4K" |
+| Lichtblick-Kino | lichtblick-kino.org/programm/ | HTML (WordPress), no JSON-LD; monthly PDF too | Allowed | **Adapter done.** Film pages have credits + all showtimes; tickets via kinoheld; labels "Filmklassiker", "Wiederaufführung in 4K" |
 | Yorck group | | | | 14 cinemas, one shared programme |
 
 - [ ] Read each site's terms and robots.txt
