@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from reflick import db, enrich, site
 from reflick.adapters import ADAPTERS
 from reflick.adapters.base import Fetcher
+from reflick.languages import language_version
 from reflick.omdb import OmdbClient
 from reflick.revival import is_revival
 from reflick.wikidata import WikidataClient
@@ -124,7 +125,7 @@ def list_screenings(args: argparse.Namespace) -> int:
         if not args.all and not is_revival(s):
             continue
         facts = ", ".join(str(f) for f in (s.country, s.year, s.director) if f)
-        lang = f" ({s.language})" if s.language else ""
+        lang = f" ({language})" if (language := language_version(s.language)) else ""
         line = f"{s.start:%a %d.%m. %H:%M}  {s.cinema_id:<30} {s.title}{lang}"
         print(f"{line}  [{facts}]" if facts else line)
     return 0

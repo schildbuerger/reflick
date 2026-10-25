@@ -98,7 +98,7 @@ def test_single_page_lists_screenings_across_cinemas(tmp_path):
     # Every filter is a multi-select: one checkbox per value that occurs, sorted.
     assert checkboxes(index, "cinemas") == ["lichtblick", "other"]
     assert checkboxes(index, "districts") == ["Mitte", "Prenzlauer Berg"]
-    assert checkboxes(index, "languages") == ["engl. OV", "OmeU", "OV"]
+    assert checkboxes(index, "languages") == ["OmeU", "OV"]  # "engl. OV" is OV
     assert "<select" not in index
     assert '"district": "Mitte"' in index
     assert '"other": "Other Kino"' in index  # names for the closed cinema dropdown's label

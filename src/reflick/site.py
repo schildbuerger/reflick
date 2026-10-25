@@ -21,6 +21,7 @@ from zoneinfo import ZoneInfo
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from reflick import db
+from reflick.languages import language_version
 from reflick.models import Cinema, RawScreening
 from reflick.revival import is_revival, revival_labels
 from reflick.titles import display_title, same_title, split_addons
@@ -57,6 +58,7 @@ class Item:
     title: str  # German title from Wikidata, else the cinema's without add-ons
     labels: list[str]  # series/re-release labels and title add-ons, shown as badges
     genres: list[str]  # from OMDb, empty if the film wasn't matched
+    language: str | None = None  # unified code: OV, OmeU, OmdU, DF, ...
     imdb_id: str | None = None  # from OMDb or Wikidata, if matched
     original_title: str | None = None  # from Wikidata, only when it differs from title
     imdb_votes: int | None = None  # from OMDb, None if not matched
@@ -133,6 +135,7 @@ def make_item(
         title=title,
         labels=[*revival_labels(s), *addons],
         genres=info.genres if info else [],
+        language=language_version(s.language),
         imdb_id=info.imdb_id if info else None,
         original_title=original if original and not same_title(original, title) else None,
         imdb_votes=info.imdb_votes if info else None,
@@ -189,7 +192,7 @@ def render_ics(items: list[Item], now: datetime) -> str:
         runtime = timedelta(minutes=s.runtime_min) if s.runtime_min else DEFAULT_RUNTIME
         uid_source = f"{s.cinema_id}|{s.start.isoformat()}|{s.title}"
         title = f"{item.title} ({s.year})" if s.year else item.title
-        description = " · ".join(p for p in (item.facts, s.language, *item.labels) if p)
+        description = " · ".join(p for p in (item.facts, item.language, *item.labels) if p)
         lines += [
             "BEGIN:VEVENT",
             f"UID:{hashlib.sha1(uid_source.encode()).hexdigest()}@reflick",
@@ -237,7 +240,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
     options = {
         "cinemas": [(c.id, c.name) for c in listed_cinemas],
         "districts": _pairs(i.cinema.neighbourhood for i in items),
-        "languages": _pairs(i.screening.language for i in items),
+        "languages": _pairs(i.language for i in items),
         "genres": _pairs(g for i in items for g in i.genres),
         # In their own order (best known first), not alphabetically.
         "popularity": [
@@ -253,7 +256,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
             "start": int(i.start.timestamp() * 1000),
             "cinema": i.cinema.id,
             "district": i.cinema.neighbourhood,
-            "language": i.screening.language or "",
+            "language": i.language or "",
             "genres": i.genres,
             "popularity": i.popularity,
             "text": " ".join(
