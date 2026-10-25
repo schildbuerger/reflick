@@ -89,11 +89,11 @@ def enrich_titles(
         if found:
             db.save_film_titles(
                 conn, film.title, key[1], found.qid, found.title_de, found.original_title,
-                found.imdb_id, found.years[0] if found.years else 0,
+                found.imdb_id, found.years[0] if found.years else 0, now=now,
             )
             result.matched += 1
         else:
-            db.save_film_titles(conn, film.title, key[1], None, None, None, None)
+            db.save_film_titles(conn, film.title, key[1], None, None, None, None, now=now)
             result.missed += 1
     result.requests = client.requests
     return result
@@ -123,7 +123,7 @@ def enrich(
                 break
             db.save_film_match(
                 conn, film.title, key[1], row["imdb_id"], row["matched_title"],
-                json.loads(row["genres"]), found.imdb_votes if found else 0,
+                json.loads(row["genres"]), found.imdb_votes if found else 0, now=now,
             )
             result.cached += 1
             continue
@@ -144,11 +144,12 @@ def enrich(
             break
         if match:
             db.save_film_match(
-                conn, film.title, key[1], match.imdb_id, match.title, match.genres, match.imdb_votes
+                conn, film.title, key[1], match.imdb_id, match.title, match.genres, match.imdb_votes,
+                now=now,
             )
             result.matched += 1
         else:
-            db.save_film_match(conn, film.title, key[1], None, None, [])
+            db.save_film_match(conn, film.title, key[1], None, None, [], now=now)
             result.missed += 1
     result.requests = client.requests
     return result

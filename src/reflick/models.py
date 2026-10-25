@@ -6,7 +6,15 @@ types, so raw data can be reprocessed when matching improves.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+BERLIN = ZoneInfo("Europe/Berlin")
+
+
+def berlin_today() -> date:
+    """Today's date in Berlin, whatever the machine's timezone (CI runs in UTC)."""
+    return datetime.now(BERLIN).date()
 
 
 @dataclass(frozen=True)

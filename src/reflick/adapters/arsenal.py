@@ -17,6 +17,7 @@ from reflick.adapters.base import (
     Cache,
     Fetcher,
     Programme,
+    berlin_today,
     clean,
     date_without_year,
     fetch_pages,
@@ -87,7 +88,7 @@ class ArsenalAdapter(Adapter):
     id = "arsenal"
 
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
-        today = date.today()
+        today = berlin_today()
         until = datetime.combine(today + timedelta(days=DAYS_AHEAD), time(), tzinfo=BERLIN)
         screenings = fetch_pages(
             fetcher, CALENDAR_URL.format, lambda text: parse_page(text, today), until

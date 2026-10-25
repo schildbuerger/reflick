@@ -8,15 +8,13 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
-from zoneinfo import ZoneInfo
 
 import httpx
 
-from reflick.models import Cinema, RawScreening
+from reflick.models import BERLIN, Cinema, RawScreening, berlin_today  # noqa: F401 (re-exported)
 
 # With contact details, which Wikimedia requires and other sites appreciate.
 USER_AGENT = "reflick/0.1 (+https://github.com/schildbuerger/reflick; revival screenings aggregator for Berlin)"
-BERLIN = ZoneInfo("Europe/Berlin")
 
 
 def clean(text: str) -> str:

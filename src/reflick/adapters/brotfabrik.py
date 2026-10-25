@@ -16,7 +16,7 @@ URLs are built here; the link only tells whether there is a next page.
 import html
 import json
 import re
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 
 from reflick.adapters.base import (
     BERLIN,
@@ -24,6 +24,7 @@ from reflick.adapters.base import (
     Cache,
     Fetcher,
     Programme,
+    berlin_today,
     clean,
     fetch_pages,
     language_code,
@@ -131,7 +132,7 @@ class BrotfabrikAdapter(Adapter):
     id = "brotfabrik"
 
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
-        today = date.today()
+        today = berlin_today()
         end = today + timedelta(days=DAYS_AHEAD)
         until = datetime.combine(end, time(), tzinfo=BERLIN)
         page_url = EVENTS_URL.format(start=today.isoformat(), end=end.isoformat(), page="{}")

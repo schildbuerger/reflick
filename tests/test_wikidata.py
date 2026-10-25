@@ -119,7 +119,7 @@ def test_matches_from_before_release_years_get_them_once(tmp_path):
 def test_omdb_uses_the_imdb_id_from_wikidata(tmp_path):
     conn = seeded(tmp_path, [("Das Appartement", 1960, "Billy Wilder")])
     # OMDb looked before Wikidata knew the film, and missed the German title.
-    db.save_film_match(conn, "Das Appartement", 1960, None, None, [])
+    db.save_film_match(conn, "Das Appartement", 1960, None, None, [], now=NOW - timedelta(hours=1))
     enrich.enrich_titles(conn, replay_client(), NOW)
 
     calls = []

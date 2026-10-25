@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from reflick.models import RawScreening
+from reflick.models import RawScreening, berlin_today
 
 MIN_AGE_YEARS = 5
 
@@ -37,5 +37,5 @@ def is_revival(screening: RawScreening, today: date | None = None, year: int | N
     year = year or screening.year
     if year is None:
         return False
-    today = today or date.today()
+    today = today or berlin_today()
     return today.year - year >= MIN_AGE_YEARS

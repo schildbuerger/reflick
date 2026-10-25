@@ -12,7 +12,7 @@ entries dated decades ahead, which the date limit cuts off.
 """
 
 import re
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 from urllib.parse import urljoin
 
 import httpx
@@ -24,6 +24,7 @@ from reflick.adapters.base import (
     Cache,
     Fetcher,
     Programme,
+    berlin_today,
     clean,
     fetch_pages,
     language_code,
@@ -116,7 +117,7 @@ class ZeughauskinoAdapter(Adapter):
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
         cache = cache or Cache()
         warnings: list[str] = []
-        until = datetime.combine(date.today() + timedelta(days=DAYS_AHEAD), time(), tzinfo=BERLIN)
+        until = datetime.combine(berlin_today() + timedelta(days=DAYS_AHEAD), time(), tzinfo=BERLIN)
         screenings = fetch_pages(fetcher, SPIELPLAN_URL.format, parse_page, until)
         for s in screenings:
             if s.year is not None:

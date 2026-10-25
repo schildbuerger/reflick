@@ -41,7 +41,7 @@ Pipeline: **adapters → SQLite snapshots → enrichment → static site**.
 
 ## Conventions
 
-- Times are timezone-aware `Europe/Berlin` (`base.BERLIN`).
+- Times are timezone-aware `Europe/Berlin` (`models.BERLIN`, re-exported by `base`). For today's date use `models.berlin_today()`, not `date.today()` (CI runs in UTC). Code that stores timestamps takes an optional `now`, so tests pass a fixed clock instead of depending on the day they run.
 - The site lists facts only (title, time, venue, link to the cinema's page). Don't copy cinema descriptions, images or trailers.
 - Legal pages contain `[[ ... ]]` placeholders; `reflick build` warns while any remain.
 - Commit messages: short imperative sentence, no prefix (e.g. "Add a date strip for picking days").

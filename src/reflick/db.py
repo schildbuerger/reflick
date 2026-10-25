@@ -97,8 +97,9 @@ CREATE TABLE IF NOT EXISTS film_titles (
 """
 
 
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+def _now(now: datetime | None = None) -> str:
+    """An ISO timestamp: `now` if given (tests pass a fixed clock), else the current time."""
+    return (now or datetime.now(timezone.utc)).isoformat()
 
 
 def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
@@ -285,13 +286,14 @@ def save_film_match(
     matched_title: str | None,
     genres: list[str],
     imdb_votes: int | None = None,
+    now: datetime | None = None,
 ) -> None:
     conn.execute(
         "INSERT OR REPLACE INTO film_matches"
         " (title_key, year, imdb_id, matched_title, genres, looked_up_at, imdb_votes)"
         " VALUES (?, ?, ?, ?, ?, ?, ?)",
         (title_key(title), year, imdb_id, matched_title,
-         json.dumps(genres, ensure_ascii=False), _now(), imdb_votes),
+         json.dumps(genres, ensure_ascii=False), _now(now), imdb_votes),
     )
     conn.commit()
 
@@ -310,12 +312,13 @@ def save_film_titles(
     original_title: str | None,
     imdb_id: str | None,
     release_year: int | None = None,
+    now: datetime | None = None,
 ) -> None:
     conn.execute(
         "INSERT OR REPLACE INTO film_titles"
         " (title_key, year, qid, title_de, original_title, imdb_id, looked_up_at, release_year)"
         " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (title_key(title), year, qid, title_de, original_title, imdb_id, _now(), release_year),
+        (title_key(title), year, qid, title_de, original_title, imdb_id, _now(now), release_year),
     )
     conn.commit()
 

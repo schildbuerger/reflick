@@ -22,7 +22,7 @@ from datetime import date, datetime
 
 import httpx
 
-from reflick.adapters.base import Adapter, Cache, Fetcher, Programme, clean
+from reflick.adapters.base import Adapter, Cache, Fetcher, Programme, berlin_today, clean
 from reflick.models import Cinema, RawScreening
 from reflick.revival import MIN_AGE_YEARS
 
@@ -192,7 +192,7 @@ class YorckAdapter(Adapter):
 
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
         cache = cache or Cache()
-        today = date.today()
+        today = berlin_today()
         warnings: list[str] = []
 
         cinemas = parse_cinemas(next_data(fetcher.get(f"{BASE_URL}/kinos")))

@@ -19,6 +19,7 @@ from reflick.adapters.base import (
     Cache,
     Fetcher,
     Programme,
+    berlin_today,
     clean,
     date_without_year,
 )
@@ -127,7 +128,7 @@ class HoefeAdapter(Adapter):
     id = "hoefe"
 
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
-        today = date.today()
+        today = berlin_today()
         screenings: list[RawScreening] = []
         for url in parse_programme(fetcher.get(PROGRAMME_URL)):
             screenings.extend(parse_film_page(fetcher.get(url), url, today))
