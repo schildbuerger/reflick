@@ -77,6 +77,8 @@ def test_all_fourteen_cinemas_with_addresses():
     assert blauer_stern.address == "Hermann-Hesse-Straße 11, 13156 Berlin"
     assert blauer_stern.neighbourhood == "Pankow"
     assert cinemas["babylon kreuzberg"].id == "yorck-babylon-kreuzberg"
+    assert (blauer_stern.lat, blauer_stern.lon) == (52.5803, 13.4015)  # for the map
+    assert all(c.lat and c.lon for c in cinemas.values())
 
 
 def test_programme_lists_every_cinema(programme):

@@ -24,6 +24,9 @@ class Cinema:
     address: str
     neighbourhood: str
     website: str
+    # Where it is, for the map; None if unknown (the cinema is then left off it).
+    lat: float | None = None
+    lon: float | None = None
 
 
 @dataclass

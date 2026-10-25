@@ -44,6 +44,8 @@ CINEMA = Cinema(
     address="Caligariplatz 1, 13086 Berlin",
     neighbourhood="Weißensee",
     website=f"{BASE_URL}/kino/",
+    lat=52.5526,
+    lon=13.4306,  # from OpenStreetMap
 )
 
 # "D 1932", or "D 1925/26" (the first year counts).

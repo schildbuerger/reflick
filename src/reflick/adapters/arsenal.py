@@ -35,6 +35,8 @@ CINEMA = Cinema(
     address="Plantagenstraße 30, 13347 Berlin",
     neighbourhood="Wedding",
     website=BASE_URL,
+    lat=52.5463,
+    lon=13.3663,  # from OpenStreetMap
 )
 
 DATE_RE = re.compile(r"(\d{1,2})\.(\d{1,2})\.\s+(\d{1,2}):(\d{2})")

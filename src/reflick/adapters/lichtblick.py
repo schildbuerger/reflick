@@ -32,6 +32,8 @@ CINEMA = Cinema(
     address="Kastanienallee 77, 10435 Berlin",
     neighbourhood="Prenzlauer Berg",
     website=BASE_URL,
+    lat=52.5365,
+    lon=13.4078,  # from OpenStreetMap
 )
 
 

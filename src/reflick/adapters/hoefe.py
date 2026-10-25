@@ -35,6 +35,8 @@ CINEMA = Cinema(
     address="Rosenthaler Straße 40/41, 10178 Berlin",
     neighbourhood="Mitte",
     website=BASE_URL,
+    lat=52.525,
+    lon=13.402,  # from OpenStreetMap
 )
 
 MONTHS = {

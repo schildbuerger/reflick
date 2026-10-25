@@ -31,6 +31,8 @@ CINEMA = Cinema(
     address="Rosa-Luxemburg-Straße 30, 10178 Berlin",
     neighbourhood="Mitte",
     website=BASE_URL,
+    lat=52.5259,
+    lon=13.4114,  # from OpenStreetMap
 )
 
 LANGUAGE_RE = re.compile(r"\b(OmeU|OmenglU|OmdU|OmU|OV|OF|DF)\b")

@@ -62,12 +62,15 @@ def parse_cinemas(page: dict) -> dict[str, Cinema]:
         if f.get("showOnCinemaListingPage") is False:
             continue
         name = clean(f["name"])  # e.g. "Blauer Stern " has a trailing space
+        coordinates = f.get("coordinates") or {}
         cinemas[name.casefold()] = Cinema(
             id=f"yorck-{f['slug']}",
             name=name,
             address=clean(f.get("address") or ""),
             neighbourhood=clean(f.get("district") or ""),
             website=f"{BASE_URL}/kinos/{f['slug']}",
+            lat=coordinates.get("lat"),
+            lon=coordinates.get("lon"),
         )
     return cinemas
 

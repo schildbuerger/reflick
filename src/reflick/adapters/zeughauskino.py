@@ -43,6 +43,8 @@ CINEMA = Cinema(
     address="Unter den Linden 2, 10117 Berlin",
     neighbourhood="Mitte",
     website=f"{BASE_URL}/zeughauskino/",
+    lat=52.5177,
+    lon=13.397,  # from OpenStreetMap
 )
 
 

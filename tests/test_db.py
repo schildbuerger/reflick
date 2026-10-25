@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from reflick import db
 from reflick.adapters.lichtblick import CINEMA
-from reflick.models import RawScreening
+from reflick.models import Cinema, RawScreening
 
 
 def make(title: str) -> RawScreening:
@@ -114,3 +114,18 @@ def test_old_database_is_migrated(tmp_path):
     [s] = db.latest_screenings(conn)
     assert (s.title, s.original_title) == ("Casablanca", None)
     db.start_run(conn, "yorck")  # the renamed column works for new runs
+
+
+def test_cinemas_keep_their_coordinates_and_old_tables_get_the_columns(tmp_path):
+    path = tmp_path / "old.sqlite"
+    old = sqlite3.connect(path)
+    old.execute("CREATE TABLE cinemas (id TEXT PRIMARY KEY, name TEXT NOT NULL, address TEXT NOT NULL,"
+                " neighbourhood TEXT NOT NULL, website TEXT NOT NULL)")
+    old.execute("INSERT INTO cinemas VALUES ('odeon', 'Odeon', 'Hauptstr. 116', 'Schöneberg', 'https://x/')")
+    old.commit()
+    old.close()
+
+    conn = db.connect(path)
+    assert db.cinemas(conn)["odeon"].lat is None  # until the next scrape
+    db.upsert_cinema(conn, Cinema("odeon", "Odeon", "Hauptstr. 116", "Schöneberg", "https://x/", 52.482, 13.3496))
+    assert (db.cinemas(conn)["odeon"].lat, db.cinemas(conn)["odeon"].lon) == (52.482, 13.3496)

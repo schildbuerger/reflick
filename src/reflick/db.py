@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS cinemas (
     name TEXT NOT NULL,
     address TEXT NOT NULL,
     neighbourhood TEXT NOT NULL,
-    website TEXT NOT NULL
+    website TEXT NOT NULL,
+    lat REAL,
+    lon REAL
 );
 CREATE TABLE IF NOT EXISTS runs (
     id INTEGER PRIMARY KEY,
@@ -116,6 +118,9 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE film_matches ADD COLUMN imdb_votes INTEGER")
     if "release_year" not in _columns(conn, "film_titles"):
         conn.execute("ALTER TABLE film_titles ADD COLUMN release_year INTEGER")
+    if "lat" not in _columns(conn, "cinemas"):
+        conn.execute("ALTER TABLE cinemas ADD COLUMN lat REAL")
+        conn.execute("ALTER TABLE cinemas ADD COLUMN lon REAL")
     # Yorck credits lived in page_cache for 30 days before the films table.
     for row in conn.execute("SELECT * FROM page_cache WHERE namespace = 'yorck-film'").fetchall():
         conn.execute(
@@ -193,9 +198,10 @@ class Cache:
 
 def upsert_cinema(conn: sqlite3.Connection, cinema: Cinema) -> None:
     conn.execute(
-        "INSERT INTO cinemas VALUES (:id, :name, :address, :neighbourhood, :website) "
-        "ON CONFLICT(id) DO UPDATE SET name=excluded.name, address=excluded.address, "
-        "neighbourhood=excluded.neighbourhood, website=excluded.website",
+        "INSERT INTO cinemas (id, name, address, neighbourhood, website, lat, lon)"
+        " VALUES (:id, :name, :address, :neighbourhood, :website, :lat, :lon)"
+        " ON CONFLICT(id) DO UPDATE SET name=excluded.name, address=excluded.address,"
+        " neighbourhood=excluded.neighbourhood, website=excluded.website, lat=excluded.lat, lon=excluded.lon",
         asdict(cinema),
     )
 
