@@ -143,8 +143,8 @@ def make_item(
 
 
 def film_year(s: RawScreening, films: dict[tuple[str, int], db.FilmInfo]) -> int | None:
-    """OMDb's year for a matched film, else the cinema's. Cinemas sometimes
-    print the year of a re-release or restoration instead of the film's."""
+    """Wikidata's first release year for a matched film, else the cinema's.
+    Cinemas sometimes print the year of a re-release or restoration instead."""
     info = films.get((db.title_key(s.title), s.year)) if s.year else None
     return (info and info.year) or s.year
 

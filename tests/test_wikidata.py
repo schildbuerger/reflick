@@ -99,8 +99,21 @@ def test_enrich_titles_caches_matches_and_misses(tmp_path):
     assert (info.title_de, info.original_title, info.imdb_id) == ("Das Appartement", "The Apartment", "tt0053604")
     assert info.genres == []  # OMDb hasn't been asked yet
 
+    assert info.year == 1960  # the earliest of 1960 and 1961
+
     again = enrich.enrich_titles(conn, replay_client(), NOW)
     assert (again.cached, again.requests) == (2, 0)
+
+
+def test_matches_from_before_release_years_get_them_once(tmp_path):
+    conn = seeded(tmp_path, [("Aguirre, der Zorn Gottes", 1972, "Werner Herzog")])
+    db.save_film_titles(conn, "Aguirre, der Zorn Gottes", 1972, "Q325662", "Aguirre", None, "tt0068182")
+    client = replay_client()
+    enrich.enrich_titles(conn, client, NOW)
+    assert client.requests == 1  # the item by its id, no new search
+    # OMDb says 1977, the US release; Wikidata's earliest date is the premiere.
+    assert db.film_info(conn)[(db.title_key("Aguirre, der Zorn Gottes"), 1972)].year == 1972
+    assert enrich.enrich_titles(conn, replay_client(), NOW).requests == 0
 
 
 def test_omdb_uses_the_imdb_id_from_wikidata(tmp_path):

@@ -18,8 +18,9 @@ the cinema labels it as a re-release. Typical labels in German programmes:
 "Wiederaufführung", "Filmklassiker", "Reprise", "restauriert",
 "4K-Restaurierung", "Best of Cinema".
 
-The year is OMDb's for films matched there, else the cinema's: cinemas
-sometimes print the year of a re-release or restoration instead.
+The year is the film's first release on Wikidata when it's matched there,
+else the cinema's: cinemas sometimes print the year of a re-release or
+restoration instead.
 
 ## MVP scope
 

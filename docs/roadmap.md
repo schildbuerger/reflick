@@ -24,8 +24,11 @@ each scraper will be.
 | Lichtblick-Kino | lichtblick-kino.org/programm/ | HTML (WordPress), no JSON-LD; monthly PDF too | Allowed | **Adapter done.** Film pages have credits + all showtimes; tickets via kinoheld; labels "Filmklassiker", "Wiederaufführung in 4K" |
 | Yorck group | yorck.de/filme (+ /kinos, /filme/&lt;slug&gt;, /specials/&lt;slug&gt;) | Next.js: JSON in `__NEXT_DATA__`; all 14 cinemas' sessions on one page | Allowed (`Allow: /`) | **Adapter done** (one adapter for all 14). Listing has only the German release date, so film pages are read for revival candidates and cached. Under load the site sometimes serves film pages without data: those are warned about and retried next run |
 
-- [~] Read each site's terms and robots.txt: robots.txt checked (and obeyed by
-      the scraper) for the six sources; terms of use not read yet
+- [x] Read each site's terms and robots.txt: robots.txt checked (and obeyed by
+      the scraper) for the six sources. None of the legal pages mention
+      automated access; most only have a general copyright notice, and Yorck
+      offers its site "zum persönlichen Gebrauch". Permission is asked for
+      below
 - [~] Ask cinemas for permission to use their programme data, and for a
       feed if they have one (small repertory cinemas often welcome the
       exposure): requests sent by email on 2026-10-25, waiting for replies
@@ -42,8 +45,8 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 
 - [x] **Cinema**: name, address, neighbourhood, website
 - [~] **Film**: title, original title, year and director are stored per
-      screening; OMDb matches (IMDb id, title, genres) live in
-      `film_matches`. There is no separate film table yet
+      screening; OMDb matches (IMDb id, title, genres, votes,
+      year) live in `film_matches`, Wikidata titles in `film_titles`. There is no separate film table yet
 - [x] **Screening**: cinema, start time, language/subtitles, tags, source URL,
       ticket link (Lichtblick only, not shown on the site)
 - [x] Language versions unified to OV, OmeU, OmdU, DF and oD (`languages.py`);
@@ -79,10 +82,11 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 - [x] Clean titles: language suffixes ("[OmU]"), series prefixes, cinema
       add-ons ("LIVE mit Babylon Orchester Berlin") shown as badges, trailing
       years
-- [x] Apply the revival rule: uses OMDb's year for matched films, else the
-      cinema's, plus any cinema label. Only revival candidates by the
-      cinema's year are looked up, so OMDb's year can drop a film but not add
-      one. OMDb gives the US release year (Aguirre: 1977, not 1972)
+- [x] Apply the revival rule: uses Wikidata's first release year for matched
+      films, else the cinema's, plus any cinema label. (OMDb's year was tried
+      first, but it's the US release: Aguirre 1977, not 1972.) Only revival
+      candidates by the cinema's year are looked up, so Wikidata's year can
+      drop a film but not add one
 - [ ] Titles the cinema prints in capitals ("SÜHNE") stay in capitals unless
       Wikidata or OMDb has the film
 

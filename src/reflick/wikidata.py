@@ -11,7 +11,8 @@ A film is found by full-text search over all labels and aliases, so German
 ("Das Appartement"), original ("La règle du jeu") and English titles all
 work. A candidate must share a release year (±1) with the cinema's year and,
 when the cinema names one, a director's surname. When OMDb already knows the
-film's IMDb id, the item is looked up by that id instead.
+film's IMDb id, the item is looked up by that id instead. The earliest
+publication date is the film's release year, used for the revival rule.
 """
 
 import re
@@ -39,7 +40,7 @@ class WikiFilm:
     title_de: str | None  # the German label, i.e. the German release title
     original_title: str | None
     imdb_id: str | None
-    years: list[int] = field(default_factory=list)  # every publication date's year
+    years: list[int] = field(default_factory=list)  # every publication date's year, sorted
     director_ids: list[str] = field(default_factory=list)
 
 
@@ -96,6 +97,11 @@ def parse_film(entity: dict) -> WikiFilm:
         years=sorted({int(v["time"][1:5]) for v in _statements(entity, "P577")}),
         director_ids=[v["id"] for v in _statements(entity, "P57")],
     )
+
+
+def film_by_id(client: WikidataClient, qid: str) -> WikiFilm | None:
+    entity = client.entities([qid], "labels|claims", "de").get(qid)
+    return parse_film(entity) if entity and "claims" in entity else None
 
 
 def search_text(title: str) -> str:

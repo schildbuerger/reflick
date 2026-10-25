@@ -187,18 +187,18 @@ def test_past_screenings_are_not_listed(tmp_path):
     assert site.build(seeded_db(tmp_path), tmp_path / "site", now=later) == 0
 
 
-def test_omdb_year_decides_for_matched_films(tmp_path):
+def test_wikidata_year_decides_for_matched_films(tmp_path):
     conn = seeded_db(tmp_path)
-    # The cinema says 1995, OMDb 2024 (made up): too recent, so it's left out.
-    db.save_film_match(conn, "United Trash", 1995, "tt0118025", "United Trash", [], 900, 2024)
+    # The cinema says 1995, Wikidata 2024 (made up): too recent, so it's left out.
+    db.save_film_titles(conn, "United Trash", 1995, "Q1", "United Trash", None, None, 2024)
     out = tmp_path / "site"
     assert site.build(conn, out, now=NOW) == 2
     assert "United Trash" not in (out / "index.html").read_text(encoding="utf-8")
-    # Matched, but OMDb has no year: the cinema's year stands.
-    db.save_film_match(conn, "United Trash", 1995, "tt0118025", "United Trash", [], 900, 0)
+    # Matched, but Wikidata has no release date: the cinema's year stands.
+    db.save_film_titles(conn, "United Trash", 1995, "Q1", "United Trash", None, None, 0)
     assert site.build(conn, out, now=NOW) == 3
     # A re-release label counts whatever the year.
-    db.save_film_match(conn, "Trainspotting", 1996, "tt0117951", "Trainspotting", [], 9_999, 2024)
+    db.save_film_titles(conn, "Trainspotting", 1996, "Q2", "Trainspotting", None, None, 2024)
     assert site.build(conn, out, now=NOW) == 3
 
 

@@ -68,21 +68,28 @@ def enrich_titles(
     omdb = db.film_matches(conn)
     result = Result()
     for key, film in films_to_look_up(conn, now).items():
-        if _is_fresh(cached.get(key), "qid", now, retry_misses):
+        row = cached.get(key)
+        stale = row and row["qid"] and row["release_year"] is None
+        if _is_fresh(row, "qid", now, retry_misses) and not stale:
             result.cached += 1
             continue
         known = omdb.get(key)
         try:
-            found = wikidata.find_film(
-                client, film.title, key[1], film.director, film.original_title,
-                imdb_id=known["imdb_id"] if known else None,
-            )
+            if stale:
+                # Matched before release years were stored: read the item again.
+                found = wikidata.film_by_id(client, row["qid"])
+            else:
+                found = wikidata.find_film(
+                    client, film.title, key[1], film.director, film.original_title,
+                    imdb_id=known["imdb_id"] if known else None,
+                )
         except WikidataError as exc:  # network or rate limit: keep what we have
             result.error = str(exc)
             break
         if found:
             db.save_film_titles(
-                conn, film.title, key[1], found.qid, found.title_de, found.original_title, found.imdb_id
+                conn, film.title, key[1], found.qid, found.title_de, found.original_title,
+                found.imdb_id, found.years[0] if found.years else 0,
             )
             result.matched += 1
         else:
@@ -107,9 +114,8 @@ def enrich(
     result = Result()
     for key, film in films_to_look_up(conn, now).items():
         row, wiki = cached.get(key), titles.get(key)
-        if row and row["imdb_id"] and (row["imdb_votes"] is None or row["omdb_year"] is None):
-            # Matched before vote counts and years were stored: fetch them once,
-            # keep the match.
+        if row and row["imdb_id"] and row["imdb_votes"] is None:
+            # Matched before vote counts were stored: fetch them once, keep the match.
             try:
                 found = find_by_imdb_id(client, row["imdb_id"])
             except OmdbError as exc:
@@ -118,7 +124,6 @@ def enrich(
             db.save_film_match(
                 conn, film.title, key[1], row["imdb_id"], row["matched_title"],
                 json.loads(row["genres"]), found.imdb_votes if found else 0,
-                (found.year or 0) if found else 0,
             )
             result.cached += 1
             continue
@@ -139,8 +144,7 @@ def enrich(
             break
         if match:
             db.save_film_match(
-                conn, film.title, key[1], match.imdb_id, match.title, match.genres,
-                match.imdb_votes, match.year or 0,
+                conn, film.title, key[1], match.imdb_id, match.title, match.genres, match.imdb_votes
             )
             result.matched += 1
         else:
