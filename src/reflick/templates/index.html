@@ -32,6 +32,7 @@
         popularity: [],
         visible: new Set(rows.map((r) => r.id)),
         dayCounts: {},  // matches per day under all filters except the date
+        scrolledFar: false,  // shows the back-to-top button (phones only, see CSS)
         upcomingDays: new Set(rows.map((r) => r.day)),  // days with screenings still to come
         init() {
           for (const key of FILTERS) this.$watch(key, () => this.update());
@@ -117,7 +118,9 @@
 
 {% block content %}
 {% from "_multiselect.html" import multiselect %}
-<div x-data="listing">
+<div x-data="listing" @scroll.window.passive="scrolledFar = window.scrollY > 2 * window.innerHeight">
+  <a href="#" class="to-top" x-cloak x-show="scrolledFar" aria-label="Back to top"
+     @click.prevent="window.scrollTo({ top: 0, behavior: 'smooth' })">↑</a>
   <div class="filterbar" x-ref="bar" x-cloak>
     {# No role="search": Pico turns such forms into a joined pill-shaped group,
        which clashes with the spaced-out filter row. #}

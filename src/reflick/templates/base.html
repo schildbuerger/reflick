@@ -119,6 +119,16 @@
     .badge.label { border-color: var(--pico-primary-border); color: var(--pico-primary); }
     footer.site { margin-block: 2rem; font-size: 0.8rem; color: var(--pico-muted-color); }
     [x-cloak] { display: none !important; }
+    /* On phones the filters scroll away; this brings them back. Kept 2rem off
+       the bottom: a tap close to it brings back Safari's collapsed toolbar. */
+    .to-top {
+      display: none; position: fixed; z-index: 3;
+      right: 1rem; bottom: calc(2rem + env(safe-area-inset-bottom));
+      width: 2.75rem; height: 2.75rem; align-items: center; justify-content: center;
+      border-radius: 50%; background: var(--pico-primary-background); color: var(--pico-primary-inverse);
+      box-shadow: 0 0.2rem 0.6rem rgb(0 0 0 / 0.25);
+      font-size: 1.25rem; line-height: 1; text-decoration: none;
+    }
     @media (max-width: 576px) {
       /* Wrapped onto four rows, a sticky filter bar would cover half the
          screen, so on phones it scrolls away and day headers stick at the top. */
@@ -137,6 +147,7 @@
       .filters .reset { flex-basis: 100%; }
       .screening { grid-template-columns: 3rem 1fr; }
       .screening .details { grid-column: 2; justify-self: start; }
+      .to-top { display: flex; }
     }
   </style>
   {% block head %}{% endblock %}
