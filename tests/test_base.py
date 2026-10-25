@@ -132,3 +132,26 @@ def test_fetcher_does_not_retry_client_errors(monkeypatch):
     with pytest.raises(httpx.HTTPStatusError):
         fetcher.get("https://cinema.example/gone")
     assert (len(requested), pauses) == (1, [])
+
+
+def test_fetcher_keeps_no_cookies(monkeypatch):
+    sent: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        sent.append(request.headers.get("cookie"))
+        # A session cookie with a non-ASCII name, as Sinema Transtopia sends.
+        return httpx.Response(200, text="ok", headers=[(b"set-cookie", "si\u0307_session=abc; Path=/".encode())])
+
+    monkeypatch.setattr(base.time, "sleep", lambda s: None)
+    fetcher = Fetcher(delay_s=0, client=base.http_client(transport=httpx.MockTransport(handler)))
+    fetcher.get("https://cinema.example/calendar")
+    fetcher.get("https://cinema.example/film")
+    assert sent == [None, None]
+
+
+def test_fetcher_get_bytes(monkeypatch):
+    pdf = b"%PDF-1.7 \xe2\x80\x93 binary"
+    fetcher, _ = fetcher_for([httpx.Response(200, content=pdf)], [], monkeypatch)
+    assert fetcher.get_bytes("https://cinema.example/flyer.pdf") == pdf

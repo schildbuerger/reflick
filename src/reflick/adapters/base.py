@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from email.utils import parsedate_to_datetime
+from http.cookiejar import CookieJar, DefaultCookiePolicy
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 
@@ -76,6 +77,19 @@ def retry_after_s(response: httpx.Response) -> float | None:
     return max(0.0, (when - datetime.now(UTC)).total_seconds())
 
 
+def http_client(**kwargs) -> httpx.Client:
+    """The Fetcher's HTTP client. It keeps no cookies: reading programmes needs
+    no session, and a cookie sent back can break requests (Sinema Transtopia's
+    has a non-ASCII name, which isn't allowed in a header)."""
+    return httpx.Client(
+        headers={"User-Agent": USER_AGENT},
+        follow_redirects=True,
+        timeout=20,
+        cookies=CookieJar(DefaultCookiePolicy(allowed_domains=[])),
+        **kwargs,
+    )
+
+
 class Fetcher:
     """HTTP client that honours robots.txt, waits between requests and retries
     temporary failures (timeouts, 429, 5xx) after growing pauses, so a cinema's
@@ -91,15 +105,18 @@ class Fetcher:
         self.delay_s = delay_s
         self.retries = retries
         self.backoff_s = backoff_s  # first retry's pause, doubled for each further one
-        self.client = client or httpx.Client(
-            headers={"User-Agent": USER_AGENT},
-            follow_redirects=True,
-            timeout=20,
-        )
+        self.client = client or http_client()
         self._robots: dict[str, RobotFileParser] = {}
         self._last_request = 0.0
 
     def get(self, url: str) -> str:
+        return self._fetch(url).text
+
+    def get_bytes(self, url: str) -> bytes:
+        """The response as it came, e.g. a PDF."""
+        return self._fetch(url).content
+
+    def _fetch(self, url: str) -> httpx.Response:
         if not self._allowed(url):
             raise PermissionError(f"robots.txt disallows {url}")
         for attempt in range(self.retries + 1):
@@ -113,7 +130,7 @@ class Fetcher:
             else:
                 if last or response.status_code not in RETRY_STATUSES:
                     response.raise_for_status()
-                    return response.text
+                    return response
                 pause = retry_after_s(response) or pause
             time.sleep(min(pause, MAX_RETRY_PAUSE_S))
         raise AssertionError("unreachable")
