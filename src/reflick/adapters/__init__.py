@@ -6,6 +6,7 @@ from reflick.adapters.base import Adapter
 from reflick.adapters.brotfabrik import BrotfabrikAdapter
 from reflick.adapters.bundesplatz import BundesplatzAdapter
 from reflick.adapters.hoefe import HoefeAdapter
+from reflick.adapters.krokodil import KrokodilAdapter
 from reflick.adapters.lichtblick import LichtblickAdapter
 from reflick.adapters.transtopia import TranstopiaAdapter
 from reflick.adapters.yorck import YorckAdapter
@@ -19,6 +20,7 @@ ADAPTERS: dict[str, type[Adapter]] = {
         BrotfabrikAdapter,
         BundesplatzAdapter,
         HoefeAdapter,
+        KrokodilAdapter,
         LichtblickAdapter,
         TranstopiaAdapter,
         YorckAdapter,
