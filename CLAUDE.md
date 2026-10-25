@@ -46,4 +46,4 @@ Pipeline: **adapters → SQLite snapshots → enrichment → static site**.
 - The site lists facts only (title, time, venue, link to the cinema's page). Don't copy cinema descriptions, images or trailers.
 - Legal pages contain `[[ ... ]]` placeholders; `reflick build` warns while any remain.
 - Commit messages: short imperative sentence, no prefix (e.g. "Add a date strip for picking days").
-- Publishing: `.github/workflows/publish.yml` runs tests, scrapes daily at 03:33 Berlin time, keeps the DB in the Actions cache, and deploys `site/` to GitHub Pages.
+- Publishing: `.github/workflows/publish.yml` runs lint and tests, scrapes daily at 03:33 Berlin time, keeps the DB in the Actions cache (backed up as an artifact, restored if the cache lost it), and deploys `site/` to GitHub Pages.

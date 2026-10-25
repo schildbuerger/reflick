@@ -7,7 +7,11 @@
 #   OMDB_API_KEY (without it the site is built without genres)
 #
 # The SQLite database is kept between runs in the Actions cache, so OMDb
-# matches and Yorck film credits are only looked up once.
+# matches and Yorck film credits are only looked up once. Each run also backs
+# it up as an artifact, since the cache drops entries unused for a week.
+#
+# Actions are pinned to commit SHAs (a tag can be moved to other code);
+# Dependabot (.github/dependabot.yml) proposes updates.
 
 name: Scrape and publish
 
@@ -20,10 +24,8 @@ on:
     branches: [main]
     paths-ignore: ["docs/**", "*.md"]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Each job gets only the permissions it needs.
+permissions: {}
 
 # Never run two scrapes at once; let a running deployment finish.
 concurrency:
@@ -33,13 +35,19 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # to find the database backup of an earlier run
+      pages: read    # configure-pages reads the site's settings
     outputs:
       scrape: ${{ steps.scrape.outcome }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       # Python version from .python-version, packages exactly as in uv.lock.
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
         with:
           enable-cache: true
           activate-environment: true
@@ -54,13 +62,32 @@ jobs:
         run: pytest -q
 
       - name: Restore database
-        uses: actions/cache/restore@v6
+        id: restore
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: data/reflick.sqlite
           # Cache entries can't be overwritten, so each run saves under its own
           # key and the next run restores the newest one by prefix.
           key: reflick-db-${{ github.run_id }}
           restore-keys: reflick-db-
+
+      # E.g. after the workflow was broken or paused for over a week.
+      - name: Restore database from backup
+        if: steps.restore.outputs.cache-matched-key == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The API's order isn't strictly newest first, so pick by creation time.
+          id=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=reflick-db&per_page=100" \
+            --jq '[.artifacts[] | select(.expired | not)] | max_by(.created_at) | .id // empty')
+          if [ -z "$id" ]; then
+            echo "::warning::No database in the cache or backups; starting with an empty one."
+            exit 0
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "$RUNNER_TEMP/db.zip"
+          mkdir -p data
+          unzip -o "$RUNNER_TEMP/db.zip" -d data
+          echo "::notice::Database restored from backup artifact $id."
 
       # Exits non-zero when a cinema fails or suddenly returns nothing. The site
       # is still built from each cinema's last good data and published; the
@@ -76,27 +103,38 @@ jobs:
         run: reflick prune --keep-days 28
 
       - name: Save database
-        if: always()
-        uses: actions/cache/save@v6
+        if: always() && hashFiles('data/reflick.sqlite') != ''
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: data/reflick.sqlite
           key: reflick-db-${{ github.run_id }}
 
-      - uses: actions/configure-pages@v6
+      - name: Back up database
+        if: always() && hashFiles('data/reflick.sqlite') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: reflick-db
+          path: data/reflick.sqlite
+          retention-days: 30
 
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d  # v6.0.0
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
           path: site
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write  # proves to Pages that the deployment comes from this workflow
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
 
   # Runs after publishing, so a broken cinema never keeps the others offline.
   report:

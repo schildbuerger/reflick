@@ -1,0 +1,24 @@
+# Weekly update proposals for the pinned GitHub Actions and the Python
+# packages in uv.lock. The cooldown skips releases younger than a week, which
+# are the ones a hijacked or broken release would be.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python:
+        patterns: ["*"]

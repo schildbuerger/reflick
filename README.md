@@ -54,6 +54,8 @@ uv sync                           # creates .venv with the exact versions in uv.
 
 Add or update packages with `uv add <package>` (`uv add --dev` for tools) or
 `uv lock --upgrade`, which keep `pyproject.toml` and `uv.lock` in step.
+Dependabot proposes updates weekly, for packages and for the GitHub Actions
+the workflow uses, which are pinned to commit SHAs.
 
 Cinemas covered so far: Arsenal, Babylon Mitte, Brotfabrik Kino, Hackesche
 Höfe Kino, Lichtblick-Kino, Zeughauskino, and the 14 Yorck cinemas (Babylon Kreuzberg,
@@ -162,7 +164,9 @@ genres, rebuilds the site and publishes it on GitHub Pages. It also runs on
 pushes to `main` and from the "Run workflow" button in the Actions tab.
 
 - The database is carried from run to run in the Actions cache, so OMDb
-  matches and Yorck film credits are only fetched once. `reflick prune`
+  matches and Yorck film credits are only fetched once. Each run also backs
+  it up as a workflow artifact (kept 30 days), which is restored when the
+  cache has lost it, e.g. after a week without runs. `reflick prune`
   keeps the last 28 days of scrape runs (plus each source's latest good run).
 - If a cinema fails or suddenly returns nothing, the site is still published
   from its last good data, and the run is then marked as failed, so GitHub
