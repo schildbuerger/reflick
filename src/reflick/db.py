@@ -7,7 +7,7 @@ e.g. all Yorck cinemas come from the "yorck" source.
 import json
 import sqlite3
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from reflick.models import Cinema, RawScreening
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS film_titles (
 
 def _now(now: datetime | None = None) -> str:
     """An ISO timestamp: `now` if given (tests pass a fixed clock), else the current time."""
-    return (now or datetime.now(timezone.utc)).isoformat()
+    return (now or datetime.now(UTC)).isoformat()
 
 
 def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
@@ -143,7 +143,8 @@ FILM_FIELDS = ("year", "director", "original_title", "country", "runtime_min", "
 
 
 class Cache:
-    """Films by (source, key), see the films table, and JSON values by (namespace, key), e.g. ("yorck-film", slug) -> credits."""
+    """Films by (source, key), see the films table, and JSON values by
+    (namespace, key), e.g. ("zeughauskino-screening", url) -> parsed page."""
 
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
@@ -155,7 +156,7 @@ class Cache:
         ).fetchone()
         if row is None:
             return None
-        age = datetime.now(timezone.utc) - datetime.fromisoformat(row["fetched_at"])
+        age = datetime.now(UTC) - datetime.fromisoformat(row["fetched_at"])
         return json.loads(row["value"]) if age < max_age else None
 
     def set(self, namespace: str, key: str, value: dict) -> None:
@@ -244,7 +245,7 @@ def prune_runs(conn: sqlite3.Connection, keep: timedelta) -> int:
     """Delete runs (and their screenings) older than `keep`, except each
     source's latest successful run, which the site is built from. Also drops
     page cache entries long past use. Returns the number of runs removed."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     cutoff = (now - keep).isoformat()
     old = [
         row[0]

@@ -34,7 +34,7 @@ restoration instead.
 
 ## Development
 
-Python 3.12+. One adapter per source lives in `src/reflick/adapters/`. A
+Python 3.14, managed with [uv](https://docs.astral.sh/uv/). One adapter per source lives in `src/reflick/adapters/`. A
 source is a single cinema (Babylon Mitte, Lichtblick-Kino) or a group that
 publishes one programme for several cinemas (Yorck, 14 cinemas). Each scrape
 run of a source is stored as a snapshot in a local SQLite database
@@ -42,15 +42,18 @@ run of a source is stored as a snapshot in a local SQLite database
 a group, suddenly has no screenings, which usually means its site changed.
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
+uv sync                           # creates .venv with the exact versions in uv.lock
 .venv/bin/pytest
+.venv/bin/ruff check src tests    # lint, also run in CI
 .venv/bin/reflick scrape          # fetch all sources, look up titles and genres, rebuild the site
 .venv/bin/reflick scrape --source yorck  # just one source
 .venv/bin/reflick enrich          # only look up titles and genres (--retry: re-check films not found)
 .venv/bin/reflick build           # rebuild the site from the database only
 .venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
+
+Add or update packages with `uv add <package>` (`uv add --dev` for tools) or
+`uv lock --upgrade`, which keep `pyproject.toml` and `uv.lock` in step.
 
 Cinemas covered so far: Arsenal, Babylon Mitte, Brotfabrik Kino, Hackesche
 Höfe Kino, Lichtblick-Kino, Zeughauskino, and the 14 Yorck cinemas (Babylon Kreuzberg,

@@ -9,7 +9,7 @@ that film.
 import json
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from reflick import db, wikidata
 from reflick.omdb import OmdbClient, OmdbError, find_by_imdb_id, find_film
@@ -63,7 +63,7 @@ def enrich_titles(
     retry_misses: bool = False,
 ) -> Result:
     """Find German and original titles on Wikidata for films not cached yet."""
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     cached = db.film_titles(conn)
     omdb = db.film_matches(conn)
     result = Result()
@@ -108,7 +108,7 @@ def enrich(
     """Look up films on OMDb that aren't cached yet. Misses are retried after a
     week, or now with retry_misses (e.g. after improving the matching), or as
     soon as Wikidata has found the film's IMDb id since."""
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     cached = db.film_matches(conn)
     titles = db.film_titles(conn)
     result = Result()

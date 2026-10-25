@@ -38,13 +38,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v7
+      # Python version from .python-version, packages exactly as in uv.lock.
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
-          python-version: "3.12"
-          cache: pip
+          enable-cache: true
+          activate-environment: true
 
       - name: Install
-        run: pip install -e ".[dev]"
+        run: uv sync --locked
+
+      - name: Lint
+        run: ruff check src tests
 
       - name: Test
         run: pytest -q

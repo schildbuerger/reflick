@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -169,7 +169,7 @@ def seeded(tmp_path, titles):
 
 def test_enrich_caches_matches_and_misses(tmp_path):
     conn = seeded(tmp_path, [("Casablanca", 1942), ("Unknown Film", 1960), ("New Film", 2026)])
-    now = datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 24, 12, 0, tzinfo=UTC)
     client = fake_client(by_title({"Casablanca": CASABLANCA}))
 
     result = enrich.enrich(conn, client, now)
@@ -192,7 +192,7 @@ def test_enrich_caches_matches_and_misses(tmp_path):
 def test_enrich_stops_on_api_error(tmp_path):
     conn = seeded(tmp_path, [("Casablanca", 1942)])
     client = fake_client(lambda p: {"Response": "False", "Error": "Invalid API key!"})
-    result = enrich.enrich(conn, client, datetime(2026, 10, 24, tzinfo=timezone.utc))
+    result = enrich.enrich(conn, client, datetime(2026, 10, 24, tzinfo=UTC))
     assert result.error == "OMDb: Invalid API key!"
     assert db.film_matches(conn) == {}
 
@@ -200,7 +200,7 @@ def test_enrich_stops_on_api_error(tmp_path):
 def test_matches_from_before_vote_counts_get_them_once(tmp_path):
     conn = seeded(tmp_path, [("Casablanca", 1942)])
     db.save_film_match(conn, "Casablanca", 1942, "tt0034583", "Casablanca", ["Drama"])  # no count
-    now = datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 24, 12, 0, tzinfo=UTC)
     client = fake_client(by_title({"tt0034583": CASABLANCA}))
     enrich.enrich(conn, client, now)
     assert [c["i"] for c in client.calls] == ["tt0034583"]

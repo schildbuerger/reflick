@@ -5,7 +5,7 @@ import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
@@ -45,7 +45,7 @@ def date_without_year(day: int, month: int, today: date) -> date:
 
 
 def fetch_pages(
-    fetcher: "Fetcher",
+    fetcher: Fetcher,
     page_url: Callable[[int], str],
     parse_page: Callable[[str], tuple[list[RawScreening], bool]],
     until: datetime,
@@ -73,7 +73,7 @@ def retry_after_s(response: httpx.Response) -> float | None:
         when = parsedate_to_datetime(value)
     except (TypeError, ValueError):
         return None
-    return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
+    return max(0.0, (when - datetime.now(UTC)).total_seconds())
 
 
 class Fetcher:

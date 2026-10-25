@@ -106,7 +106,8 @@ def parse_film_page(html: str, url: str, today: date) -> list[RawScreening]:
         day = infer_date(item.select_one(".programme-details-showtimes-item-date").get_text(" "), today)
         # Only showtimes with a language note have the "language-showtime" class.
         for show in item.select(".movie-item-showtime a"):
-            hour, minute = (int(p) for p in clean(show.select_one(".movie-itemshowtime-linktext").get_text()).split(":"))
+            time_text = clean(show.select_one(".movie-itemshowtime-linktext").get_text())
+            hour, minute = (int(p) for p in time_text.split(":"))
             lang_node = show.select_one(".movie-item-showing-language")
             screenings.append(
                 RawScreening(

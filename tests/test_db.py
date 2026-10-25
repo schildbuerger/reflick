@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from reflick import db
@@ -45,7 +45,7 @@ def test_prune_keeps_recent_runs_and_each_sources_latest_ok_run(tmp_path):
         run_id = db.start_run(conn, source)
         db.save_screenings(conn, run_id, [make(f"{source}-{days_ago}")])
         db.finish_run(conn, run_id, status)
-        started = (datetime.now(timezone.utc) - timedelta(days=days_ago)).isoformat()
+        started = (datetime.now(UTC) - timedelta(days=days_ago)).isoformat()
         conn.execute("UPDATE runs SET started_at = ? WHERE id = ?", (started, run_id))
         conn.commit()
         return run_id

@@ -12,7 +12,7 @@ import itertools
 import re
 import sqlite3
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from importlib.resources import files
 from pathlib import Path
 from urllib.parse import urlencode
@@ -183,7 +183,7 @@ def _ics_fold(line: str) -> str:
 
 
 def _ics_time(dt: datetime) -> str:
-    return dt.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return dt.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
 def render_ics(items: list[Item], now: datetime) -> str:
@@ -251,7 +251,7 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
         "genres": _pairs(g for i in items for g in i.genres),
         # In their own order (best known first), not alphabetically.
         "popularity": [
-            (value, label) for value, label in [*((v, l) for v, l, _ in POPULARITY), POPULARITY_UNKNOWN]
+            (value, label) for value, label in [*((v, text) for v, text, _ in POPULARITY), POPULARITY_UNKNOWN]
             if any(i.popularity == value for i in items)
         ],
     }

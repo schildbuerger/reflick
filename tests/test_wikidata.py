@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -17,7 +17,7 @@ from reflick.wikidata import WikidataClient, WikidataError, find_film, search_te
 RESPONSES = json.loads(
     (Path(__file__).parent / "fixtures" / "wikidata" / "responses.json").read_text(encoding="utf-8")
 )
-NOW = datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 24, 12, 0, tzinfo=UTC)
 
 
 def replay_client() -> WikidataClient:

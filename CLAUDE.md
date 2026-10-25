@@ -6,10 +6,11 @@ reflick collects revival screenings (classics, restorations, re-releases) from B
 
 ## Commands
 
-Python 3.12+, virtualenv in `.venv`, no linter configured.
+Python 3.14 (`.python-version`), managed with uv: `uv sync` builds `.venv` from `uv.lock`; add packages with `uv add`, not by editing `pyproject.toml`. Lint with Ruff (config in `pyproject.toml`, run in CI; the formatter isn't used).
 
 ```bash
-.venv/bin/pip install -e ".[dev]"
+uv sync
+.venv/bin/ruff check src tests                     # lint (CI fails on findings)
 .venv/bin/pytest                                   # all tests (offline, use HTML fixtures)
 .venv/bin/pytest tests/test_yorck.py -k film_page  # one file / one test
 .venv/bin/reflick scrape [--source yorck] [--no-build]  # fetch, enrich via OMDb, build site
