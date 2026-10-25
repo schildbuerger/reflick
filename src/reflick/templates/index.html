@@ -32,9 +32,13 @@
         popularity: [],
         visible: new Set(rows.map((r) => r.id)),
         dayCounts: {},  // matches per day under all filters except the date
+        upcomingDays: new Set(rows.map((r) => r.day)),  // days with screenings still to come
         init() {
           for (const key of FILTERS) this.$watch(key, () => this.update());
           this.update();
+          // The site is built once a day, so screenings that have started since
+          // are hidden here, and again every minute while the page stays open.
+          setInterval(() => this.update(), 60 * 1000);
           // Day headers stick right below the sticky filter bar. Its height is
           // measured rather than computed in CSS, so fonts, zoom or wrapping
           // can't make the headers slide under it.
@@ -48,7 +52,10 @@
         update() {
           const q = this.q.trim().toLowerCase();
           const any = (picked, value) => !picked.length || picked.includes(value);
-          const matching = rows
+          const now = Date.now();
+          const upcoming = rows.filter((r) => r.start > now);
+          this.upcomingDays = new Set(upcoming.map((r) => r.day));
+          const matching = upcoming
             .filter((r) => any(this.cinemas, r.cinema))
             .filter((r) => any(this.districts, r.district))
             .filter((r) => any(this.languages, r.language))
@@ -133,7 +140,7 @@
         <button type="button" class="chip" :aria-pressed="days.length === 0" @click="allDays()">All dates</button>
         {% for day, _ in days %}
         {% set iso = day.isoformat() %}
-        <button type="button" class="chip" data-day="{{ iso }}"
+        <button type="button" class="chip" data-day="{{ iso }}" x-show="upcomingDays.has('{{ iso }}')"
                 :aria-pressed="days.includes('{{ iso }}')" :disabled="!dayCounts['{{ iso }}']"
                 @click="toggleDay('{{ iso }}')">
           <span x-text="dayLabel('{{ iso }}', '{{ day | short_day }}')">{{ day | short_day }}</span>

@@ -187,6 +187,15 @@ def test_past_screenings_are_not_listed(tmp_path):
     assert site.build(seeded_db(tmp_path), tmp_path / "site", now=later) == 0
 
 
+def test_rows_carry_start_times_for_hiding_started_screenings(tmp_path):
+    out = tmp_path / "site"
+    site.build(seeded_db(tmp_path), out, now=NOW)
+    index = (out / "index.html").read_text(encoding="utf-8")
+    rows = json.loads(re.search(r'<script type="application/json" id="rows">(.*?)</script>', index).group(1))
+    starts = re.findall(r'<time datetime="([^"]+)"', index)
+    assert [r["start"] for r in rows] == [int(datetime.fromisoformat(s).timestamp() * 1000) for s in starts]
+
+
 def test_popularity_levels_are_filterable_best_known_first(tmp_path):
     conn = seeded_db(tmp_path)
     db.save_film_match(conn, "Casablanca", 1942, "tt0034583", "Casablanca", [], 632_401)

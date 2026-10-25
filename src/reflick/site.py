@@ -249,6 +249,8 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
         {
             "id": i.id,
             "day": i.programme_day.isoformat(),
+            # Epoch ms, so the page can hide screenings that started after the build.
+            "start": int(i.start.timestamp() * 1000),
             "cinema": i.cinema.id,
             "district": i.cinema.neighbourhood,
             "language": i.screening.language or "",
