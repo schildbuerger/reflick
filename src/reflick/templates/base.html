@@ -54,6 +54,17 @@
       max-height: min(60vh, 24rem); overflow-y: auto; overflow-x: hidden;
     }
     .filters .reset { flex: none; width: auto; padding-inline: 1rem; }
+    /* Options that can be ruled out: the checkbox includes, the ✕ at the end excludes. */
+    .filters .multi li.excludable { display: flex; align-items: center; gap: 0.5rem; }
+    .filters .multi li.excludable label { flex: 1; min-width: 0; }
+    .filters .multi .exclude {
+      flex: none; width: auto; margin: 0; padding: 0.1rem 0.45rem;
+      border: none; background: none; box-shadow: none;
+      color: var(--pico-muted-color); font-size: 0.8rem; line-height: 1;
+    }
+    .filters .multi .exclude:hover { color: var(--pico-del-color); }
+    .filters .multi .exclude[aria-pressed=true] { color: var(--pico-del-color); font-weight: 700; }
+    .filters .multi li.excluded label { text-decoration: line-through; color: var(--pico-muted-color); }
     /* Date strip: a horizontally scrolling row of day chips with arrow buttons. */
     .daystrip {
       display: flex; align-items: center; gap: 0.35rem;

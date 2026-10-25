@@ -18,7 +18,9 @@
         genres: ["Any genre", "genres", (g) => g],
         popularity: ["Any popularity", "levels", (p) => popularityNames[p] || p],
       };
-      const FILTERS = ["q", "days", ...Object.keys(LABELS)];
+      // Filters whose options can also be ruled out, each into a `<key>Out` array.
+      const EXCLUDABLE = ["languages", "genres"];
+      const FILTERS = ["q", "days", ...Object.keys(LABELS), ...EXCLUDABLE.map((key) => `${key}Out`)];
       const NIGHT_CUTOFF_MS = {{ night_cutoff_hours }} * 3600 * 1000;
       const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       Alpine.data("listing", () => ({
@@ -30,6 +32,8 @@
         languages: [],
         genres: [],
         popularity: [],
+        languagesOut: [],
+        genresOut: [],
         visible: new Set(rows.map((r) => r.id)),
         dayCounts: {},  // matches per day under all filters except the date
         scrolledFar: false,  // shows the back-to-top button (phones only, see CSS)
@@ -62,6 +66,9 @@
             .filter((r) => any(this.languages, r.language))
             // A film with several genres matches if any of them is picked.
             .filter((r) => !this.genres.length || r.genres.some((g) => this.genres.includes(g)))
+            .filter((r) => !this.languagesOut.includes(r.language))
+            // Ruling out a genre drops every film that has it among its genres.
+            .filter((r) => !r.genres.some((g) => this.genresOut.includes(g)))
             .filter((r) => any(this.popularity, r.popularity))
             .filter((r) => !q || r.text.includes(q));
           const counts = {};
@@ -71,9 +78,23 @@
         },
         label(key) {
           const [none, plural, show] = LABELS[key];
-          const picked = this[key];
-          if (!picked.length) return none;
-          return picked.length <= 2 ? picked.map(show).join(", ") : `${picked.length} ${plural}`;
+          const part = (values, prefix) =>
+            values.length <= 2 ? values.map((v) => prefix + show(v)) : [`${prefix}${values.length} ${plural}`];
+          const parts = [...part(this[key], ""), ...part(this[`${key}Out`] || [], "not ")];
+          return parts.length ? parts.join(", ") : none;
+        },
+        // An option is either included, excluded or neither.
+        toggleExclude(key, value) {
+          const out = `${key}Out`;
+          if (this[out].includes(value)) {
+            this[out] = this[out].filter((v) => v !== value);
+          } else {
+            this[out] = [...this[out], value];
+            this[key] = this[key].filter((v) => v !== value);
+          }
+        },
+        unexclude(key, value) {
+          this[`${key}Out`] = this[`${key}Out`].filter((v) => v !== value);
         },
         toggleDay(day) {
           this.days = this.days.includes(day) ? this.days.filter((d) => d !== day) : [...this.days, day];
@@ -128,8 +149,8 @@
       <input type="search" x-model="q" placeholder="Search title or director" aria-label="Search title or director">
       {% if options.cinemas %}{{ multiselect("cinemas", "Cinemas", "All cinemas", options.cinemas) }}{% endif %}
       {% if options.districts %}{{ multiselect("districts", "Districts", "Any district", options.districts) }}{% endif %}
-      {% if options.languages %}{{ multiselect("languages", "Languages", "Any language", options.languages) }}{% endif %}
-      {% if options.genres %}{{ multiselect("genres", "Genres", "Any genre", options.genres) }}{% endif %}
+      {% if options.languages %}{{ multiselect("languages", "Languages", "Any language", options.languages, exclude=True) }}{% endif %}
+      {% if options.genres %}{{ multiselect("genres", "Genres", "Any genre", options.genres, exclude=True) }}{% endif %}
       {% if options.popularity %}{{ multiselect("popularity", "Popularity", "Any popularity", options.popularity) }}{% endif %}
       <button type="button" class="reset secondary outline" @click="reset()" :disabled="!active">Reset</button>
     </form>

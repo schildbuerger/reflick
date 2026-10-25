@@ -17,7 +17,7 @@ NOW = datetime(2026, 10, 24, 12, 0, tzinfo=BERLIN)
 
 def checkboxes(index: str, model: str) -> list[str]:
     """Values of a multi-select filter's checkboxes, in page order."""
-    return re.findall(rf'<input type="checkbox" value="([^"]+)" x-model="{model}">', index)
+    return re.findall(rf'<input type="checkbox" value="([^"]+)" x-model="{model}"[\s>]', index)
 
 
 def seeded_db(tmp_path):
@@ -117,6 +117,10 @@ def test_genres_from_omdb_are_shown_and_filterable(tmp_path):
     assert index.count('class="letterboxd"') == 1
     assert checkboxes(index, "genres") == ["Drama", "Romance"]
     assert '"genres": ["Drama", "Romance"]' in index
+    # Genres and languages can also be ruled out; cinemas can't.
+    assert """@click='toggleExclude("genres", "Drama")'""" in index
+    assert 'toggleExclude("languages", ' in index
+    assert 'toggleExclude("cinemas"' not in index
 
 
 def test_title_addons_become_badges_and_verified_title_is_shown(tmp_path):

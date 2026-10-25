@@ -2,13 +2,25 @@
    options can be picked. `model` is the Alpine array the checkboxes fill
    (see `label()` in index.html), `title` names the dropdown for screen
    readers, `placeholder` is shown while nothing is picked, and `options` are
-   (value, text) pairs. #}
-{% macro multiselect(model, title, placeholder, options) %}
+   (value, text) pairs. With `exclude`, each option also gets a ✕ button that
+   rules it out instead, kept in the array `<model>Out`. #}
+{% macro multiselect(model, title, placeholder, options, exclude=False) %}
 <details class="dropdown multi multi-{{ model }}" @click.outside="$el.open = false">
   <summary aria-label="{{ title }}" x-text="label('{{ model }}')">{{ placeholder }}</summary>
   <ul>
     {% for value, text in options %}
+    {% if exclude %}
+    {# Single-quoted attributes: tojson escapes ' but not ". #}
+    <li class="excludable" :class='{ excluded: {{ model }}Out.includes({{ value | tojson }}) }'>
+      <label><input type="checkbox" value="{{ value }}" x-model="{{ model }}"
+                    @change='$event.target.checked && unexclude("{{ model }}", {{ value | tojson }})'>{{ text }}</label>
+      <button type="button" class="exclude" title="Exclude {{ text }}" aria-label="Exclude {{ text }}"
+              :aria-pressed='{{ model }}Out.includes({{ value | tojson }})'
+              @click='toggleExclude("{{ model }}", {{ value | tojson }})'>✕</button>
+    </li>
+    {% else %}
     <li><label><input type="checkbox" value="{{ value }}" x-model="{{ model }}">{{ text }}</label></li>
+    {% endif %}
     {% endfor %}
   </ul>
 </details>
