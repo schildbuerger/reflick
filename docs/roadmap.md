@@ -61,7 +61,7 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 - [x] Alert when a source or a single cinema suddenly returns zero
       screenings: the scrape exits non-zero, the daily workflow still
       publishes and then fails, so GitHub emails a warning
-- [x] Daily scheduled run: `.github/workflows/publish.yml` (04:00 UTC), with
+- [x] Daily scheduled run: `.github/workflows/publish.yml` (03:33 Berlin time), with
       the database kept in the Actions cache and old runs pruned. Not run on
       GitHub yet
 

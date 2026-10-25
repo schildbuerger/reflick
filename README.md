@@ -148,7 +148,7 @@ static host.
 
 ## Publishing (GitHub Pages)
 
-`.github/workflows/publish.yml` scrapes once a day (04:00 UTC), looks up
+`.github/workflows/publish.yml` scrapes once a day (03:33 Berlin time), looks up
 genres, rebuilds the site and publishes it on GitHub Pages. It also runs on
 pushes to `main` and from the "Run workflow" button in the Actions tab.
 
