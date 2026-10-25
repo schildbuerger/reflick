@@ -112,11 +112,9 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       districts with upcoming revivals are offered
 - [x] Sticky filter bar on screens wider than 576px, with day headers
       sticking below it
-- [ ] Mobile filter sheet: on phones, a compact sticky bar with the search
-      and a "Filters (n)" button that opens a bottom sheet with the filters
-      stacked full-width, updating the list live and ending in "Show n
-      screenings" and Reset. Could use a native `<dialog>`, which Pico
-      already styles. Until then the filters scroll away on phones
+- [x] Filters on phones: they scroll away with the page, and a back-to-top
+      button (bottom right, shown after two screen heights) brings them back.
+      Chosen over a sticky filter bar with a bottom sheet, to keep it simple
 - [x] Screenings that have started are hidden in the browser, also while the
       page stays open, since the site is built only once a day. Days read
       "Today" and "Tomorrow"
