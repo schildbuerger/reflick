@@ -5,7 +5,8 @@ import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 
@@ -13,6 +14,9 @@ import httpx
 
 from reflick.models import BERLIN, Cinema, RawScreening, berlin_today  # noqa: F401 (re-exported)
 
+# Responses worth another try: rate limiting and temporary server trouble.
+RETRY_STATUSES = {429, 500, 502, 503, 504}
+MAX_RETRY_PAUSE_S = 120.0
 # With contact details, which Wikimedia requires and other sites appreciate.
 USER_AGENT = "reflick/0.1 (+https://github.com/schildbuerger/reflick; revival screenings aggregator for Berlin)"
 
@@ -60,11 +64,33 @@ def fetch_pages(
     return screenings
 
 
-class Fetcher:
-    """HTTP client that honours robots.txt and waits between requests."""
+def retry_after_s(response: httpx.Response) -> float | None:
+    """The wait a 429 or 503 response asks for, in seconds or as an HTTP date."""
+    value = response.headers.get("Retry-After", "").strip()
+    if value.isdigit():
+        return float(value)
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
 
-    def __init__(self, delay_s: float = 1.0, client: httpx.Client | None = None):
+
+class Fetcher:
+    """HTTP client that honours robots.txt, waits between requests and retries
+    temporary failures (timeouts, 429, 5xx) after growing pauses, so a cinema's
+    server having a bad moment doesn't fail the whole source."""
+
+    def __init__(
+        self,
+        delay_s: float = 1.0,
+        client: httpx.Client | None = None,
+        retries: int = 2,
+        backoff_s: float = 10.0,
+    ):
         self.delay_s = delay_s
+        self.retries = retries
+        self.backoff_s = backoff_s  # first retry's pause, doubled for each further one
         self.client = client or httpx.Client(
             headers={"User-Agent": USER_AGENT},
             follow_redirects=True,
@@ -76,13 +102,30 @@ class Fetcher:
     def get(self, url: str) -> str:
         if not self._allowed(url):
             raise PermissionError(f"robots.txt disallows {url}")
+        for attempt in range(self.retries + 1):
+            last = attempt == self.retries
+            pause = self.backoff_s * 2**attempt
+            try:
+                response = self._request(url)
+            except httpx.TransportError:  # timeout, connection refused or reset
+                if last:
+                    raise
+            else:
+                if last or response.status_code not in RETRY_STATUSES:
+                    response.raise_for_status()
+                    return response.text
+                pause = retry_after_s(response) or pause
+            time.sleep(min(pause, MAX_RETRY_PAUSE_S))
+        raise AssertionError("unreachable")
+
+    def _request(self, url: str) -> httpx.Response:
         wait = self._last_request + self.delay_s - time.monotonic()
         if wait > 0:
             time.sleep(wait)
-        response = self.client.get(url)
-        self._last_request = time.monotonic()
-        response.raise_for_status()
-        return response.text
+        try:
+            return self.client.get(url)
+        finally:
+            self._last_request = time.monotonic()
 
     def _allowed(self, url: str) -> bool:
         parts = urlsplit(url)

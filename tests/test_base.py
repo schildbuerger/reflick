@@ -1,8 +1,10 @@
 from datetime import date, datetime, timedelta
 
+import httpx
 import pytest
 
-from reflick.adapters.base import BERLIN, date_without_year, fetch_pages, language_code
+from reflick.adapters import base
+from reflick.adapters.base import BERLIN, Fetcher, date_without_year, fetch_pages, language_code
 from reflick.models import RawScreening
 
 TODAY = date(2026, 10, 24)
@@ -65,3 +67,68 @@ def test_fetch_pages_stops_at_the_date_limit():
     found = fetch_pages(fetcher, str, PagedFetcher.parse, until)
     assert fetcher.requested == [1, 2]
     assert [s.title for s in found] == ["Film 0", "Film 5", "Film 10"]
+
+
+def fetcher_for(responses: list, pauses: list[float], monkeypatch) -> tuple[Fetcher, list[str]]:
+    """A Fetcher whose server answers with `responses` in turn (an int is a
+    status, an exception is raised); robots.txt is missing. Pauses are recorded."""
+    requested: list[str] = []
+    queue = list(responses)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        requested.append(str(request.url))
+        answer = queue.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        if isinstance(answer, httpx.Response):
+            return answer
+        return httpx.Response(answer, text=f"status {answer}")
+
+    monkeypatch.setattr(base.time, "sleep", pauses.append)
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    return Fetcher(delay_s=0, client=client, backoff_s=10), requested
+
+
+def test_fetcher_retries_server_errors_with_growing_pauses(monkeypatch):
+    pauses: list[float] = []
+    fetcher, requested = fetcher_for([503, 502, 200], pauses, monkeypatch)
+    assert fetcher.get("https://cinema.example/programm") == "status 200"
+    assert len(requested) == 3
+    assert pauses == [10, 20]
+
+
+def test_fetcher_retries_timeouts(monkeypatch):
+    pauses: list[float] = []
+    fetcher, _ = fetcher_for([httpx.ReadTimeout("slow"), 200], pauses, monkeypatch)
+    assert fetcher.get("https://cinema.example/programm") == "status 200"
+    assert pauses == [10]
+
+
+def test_fetcher_honours_retry_after(monkeypatch):
+    pauses: list[float] = []
+    busy = httpx.Response(429, headers={"Retry-After": "42"})
+    fetcher, _ = fetcher_for([busy, 200], pauses, monkeypatch)
+    fetcher.get("https://cinema.example/programm")
+    assert pauses == [42]
+
+
+def test_fetcher_gives_up_after_its_retries(monkeypatch):
+    pauses: list[float] = []
+    fetcher, requested = fetcher_for([500, 500, 500], pauses, monkeypatch)
+    with pytest.raises(httpx.HTTPStatusError):
+        fetcher.get("https://cinema.example/programm")
+    assert len(requested) == 3
+
+    fetcher, _ = fetcher_for([httpx.ConnectError("refused")] * 3, [], monkeypatch)
+    with pytest.raises(httpx.ConnectError):
+        fetcher.get("https://cinema.example/programm")
+
+
+def test_fetcher_does_not_retry_client_errors(monkeypatch):
+    pauses: list[float] = []
+    fetcher, requested = fetcher_for([404], pauses, monkeypatch)
+    with pytest.raises(httpx.HTTPStatusError):
+        fetcher.get("https://cinema.example/gone")
+    assert (len(requested), pauses) == (1, [])

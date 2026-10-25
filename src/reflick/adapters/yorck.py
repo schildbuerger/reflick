@@ -233,7 +233,10 @@ class YorckAdapter(Adapter):
             try:
                 credits = parse_film_page(next_data(fetcher.get(f"{BASE_URL}/filme/{slug}")))
                 break
-            except (httpx.HTTPError, ValueError, KeyError) as exc:
+            except httpx.HTTPError as exc:  # the Fetcher has retried those already
+                warnings.append(f"film {slug}: {exc!r}")
+                return {}
+            except (ValueError, KeyError) as exc:
                 error = exc
         else:
             warnings.append(f"film {slug}: {error!r} ({FILM_PAGE_ATTEMPTS} attempts)")
