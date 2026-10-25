@@ -176,7 +176,7 @@ def test_enrich_caches_matches_and_misses(tmp_path):
     assert (result.matched, result.missed) == (1, 1)  # New Film is no revival: not looked up
     assert db.film_info(conn) == {
         ("casablanca", 1942): db.FilmInfo(
-            "Casablanca", ["Drama", "Romance", "War"], "tt0034583", imdb_votes=632401
+            "Casablanca", ["Drama", "Romance", "War"], "tt0034583", imdb_votes=632401, year=1943
         )
     }
 
@@ -205,10 +205,11 @@ def test_matches_from_before_vote_counts_get_them_once(tmp_path):
     enrich.enrich(conn, client, now)
     assert [c["i"] for c in client.calls] == ["tt0034583"]
     info = db.film_info(conn)[("casablanca", 1942)]
-    assert (info.imdb_votes, info.genres) == (632401, ["Drama"])  # the match itself is kept
+    assert (info.imdb_votes, info.year, info.genres) == (632401, 1943, ["Drama"])  # match kept
 
     # No count on IMDb: stored as 0, so it isn't asked again.
     db.save_film_match(conn, "Casablanca", 1942, "tt0034583", "Casablanca", ["Drama"])
     enrich.enrich(conn, fake_client(by_title({})), now)
-    assert db.film_info(conn)[("casablanca", 1942)].imdb_votes == 0
+    info = db.film_info(conn)[("casablanca", 1942)]
+    assert (info.imdb_votes, info.year) == (0, None)
     assert enrich.enrich(conn, fake_client(by_title({})), now).requests == 0

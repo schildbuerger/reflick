@@ -119,10 +119,11 @@ def list_screenings(args: argparse.Namespace) -> int:
     conn = db.connect(args.db)
     now = datetime.now(BERLIN)
     until = now + timedelta(days=args.days)
+    films = db.film_info(conn)
     for s in db.latest_screenings(conn):
         if not now <= s.start < until:
             continue
-        if not args.all and not is_revival(s):
+        if not args.all and not is_revival(s, year=site.film_year(s, films)):
             continue
         facts = ", ".join(str(f) for f in (s.country, s.year, s.director) if f)
         lang = f" ({language})" if (language := language_version(s.language)) else ""

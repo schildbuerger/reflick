@@ -79,8 +79,10 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 - [x] Clean titles: language suffixes ("[OmU]"), series prefixes, cinema
       add-ons ("LIVE mit Babylon Orchester Berlin") shown as badges, trailing
       years
-- [~] Apply the revival rule: uses the cinema's year plus any cinema label.
-      OMDb's year isn't used for it yet
+- [x] Apply the revival rule: uses OMDb's year for matched films, else the
+      cinema's, plus any cinema label. Only revival candidates by the
+      cinema's year are looked up, so OMDb's year can drop a film but not add
+      one. OMDb gives the US release year (Aguirre: 1977, not 1972)
 - [ ] Titles the cinema prints in capitals ("SÜHNE") stay in capitals unless
       Wikidata or OMDb has the film
 

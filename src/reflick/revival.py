@@ -29,11 +29,13 @@ def has_revival_label(screening: RawScreening) -> bool:
     return bool(revival_labels(screening)) or any(kw in title for kw in REVIVAL_KEYWORDS)
 
 
-def is_revival(screening: RawScreening, today: date | None = None) -> bool:
-    """A film at least MIN_AGE_YEARS old, or one the cinema labels a re-release."""
+def is_revival(screening: RawScreening, today: date | None = None, year: int | None = None) -> bool:
+    """A film at least MIN_AGE_YEARS old, or one the cinema labels a re-release.
+    `year` overrides the cinema's year, e.g. with OMDb's for a matched film."""
     if has_revival_label(screening):
         return True
-    if screening.year is None:
+    year = year or screening.year
+    if year is None:
         return False
     today = today or date.today()
-    return today.year - screening.year >= MIN_AGE_YEARS
+    return today.year - year >= MIN_AGE_YEARS

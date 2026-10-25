@@ -142,6 +142,13 @@ def make_item(
     )
 
 
+def film_year(s: RawScreening, films: dict[tuple[str, int], db.FilmInfo]) -> int | None:
+    """OMDb's year for a matched film, else the cinema's. Cinemas sometimes
+    print the year of a re-release or restoration instead of the film's."""
+    info = films.get((db.title_key(s.title), s.year)) if s.year else None
+    return (info and info.year) or s.year
+
+
 def collect(
     screenings: list[RawScreening],
     cinemas: dict[str, Cinema],
@@ -150,7 +157,7 @@ def collect(
 ) -> list[Item]:
     """Upcoming revivals across all cinemas, in start order."""
     upcoming = sorted(
-        (s for s in screenings if s.start >= now and is_revival(s, now.date())),
+        (s for s in screenings if s.start >= now and is_revival(s, now.date(), film_year(s, films))),
         key=lambda s: (s.start, s.title),
     )
     return [make_item(i, s, cinemas, films) for i, s in enumerate(upcoming)]

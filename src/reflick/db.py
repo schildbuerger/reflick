@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS film_matches (
     genres TEXT NOT NULL,  -- JSON list
     looked_up_at TEXT NOT NULL,
     imdb_votes INTEGER,  -- how well known the film is; 0 if IMDb has no count
+    omdb_year INTEGER,  -- OMDb's release year, used for the revival rule; 0 if none
     PRIMARY KEY (title_key, year)
 );
 -- Wikidata lookups, keyed like film_matches. qid is NULL when nothing matched.
@@ -96,6 +97,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE raw_screenings ADD COLUMN original_title TEXT")
     if "imdb_votes" not in _columns(conn, "film_matches"):
         conn.execute("ALTER TABLE film_matches ADD COLUMN imdb_votes INTEGER")
+    if "omdb_year" not in _columns(conn, "film_matches"):
+        conn.execute("ALTER TABLE film_matches ADD COLUMN omdb_year INTEGER")
     conn.commit()
 
 
@@ -228,13 +231,14 @@ def save_film_match(
     matched_title: str | None,
     genres: list[str],
     imdb_votes: int | None = None,
+    omdb_year: int | None = None,
 ) -> None:
     conn.execute(
         "INSERT OR REPLACE INTO film_matches"
-        " (title_key, year, imdb_id, matched_title, genres, looked_up_at, imdb_votes)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        " (title_key, year, imdb_id, matched_title, genres, looked_up_at, imdb_votes, omdb_year)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (title_key(title), year, imdb_id, matched_title,
-         json.dumps(genres, ensure_ascii=False), _now(), imdb_votes),
+         json.dumps(genres, ensure_ascii=False), _now(), imdb_votes, omdb_year),
     )
     conn.commit()
 
@@ -270,6 +274,7 @@ class FilmInfo:
     title_de: str | None = None  # from Wikidata
     original_title: str | None = None  # from Wikidata
     imdb_votes: int | None = None  # from OMDb; None if not matched or not fetched yet
+    year: int | None = None  # OMDb's release year; None if not matched or unknown
 
 
 def film_info(conn: sqlite3.Connection) -> dict[tuple[str, int], FilmInfo]:
@@ -286,6 +291,7 @@ def film_info(conn: sqlite3.Connection) -> dict[tuple[str, int], FilmInfo]:
             title_de=w["title_de"] if w else None,
             original_title=w["original_title"] if w else None,
             imdb_votes=o["imdb_votes"] if o else None,
+            year=(o["omdb_year"] or None) if o else None,
         )
     return info
 
