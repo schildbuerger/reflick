@@ -40,6 +40,16 @@ each scraper will be.
       filled in. Pico and Alpine are served from the site, so no CDN is
       involved
 
+- [ ] More cinemas, from a survey of 22 candidates (2026-10-25) by repertory
+      share, data format and the terms on their legal pages. Low risk and
+      worth an adapter: Il Kino (JSON-LD, so little effort), Kino Krokodil,
+      Wolf Kino, Filmkunst 66, Bundesplatz-Kino. Sinema Transtopia still to
+      check by hand. Only with permission, as their Impressum forbids
+      storing content in databases: City Kino Wedding, Moviemento, Kino
+      Toni. Mostly current releases, so not worth it for now: fsk, Sputnik,
+      b-ware!, Tilsiter, Filmrauschpalast, Eva, Union, Kino Zukunft, and
+      Klick Kino (PDF programme)
+
 If most cinemas offer structured data or clean HTML, the project is
 straightforward. If most use PDFs, ingestion will take most of the effort.
 
@@ -106,6 +116,8 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       the other filters; several days can be picked (e.g. a weekend)
 - [x] Filters: search, cinema, language/subtitles, genre, plus a Reset
       button
+- [x] Language and genre options can also be ruled out with a ✕ next to
+      each (e.g. "not Documentary"), instead of picking all the others
 - [x] Filter: popularity (well known, lesser known, rarely seen, unknown),
       from IMDb vote counts via OMDb
 - [x] Filter: districts, multi-select (e.g. Neukölln + Kreuzberg); only
@@ -123,6 +135,8 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       names link to Google Maps; matched films link to Letterboxd
 - [x] Mobile-first: the layout adapts to narrow screens, checked on a real
       phone
+- [x] Every other screening row of a day has a faint stripe; rows hidden by
+      the filters don't count, so the visible ones keep alternating
 
 ## 8. Hosting and operations
 
