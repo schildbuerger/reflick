@@ -17,12 +17,18 @@ RULES = [
     (re.compile(r"om\.?\s*d?\.?\s*u"), "OmdU"),
     (re.compile(r"df|dt\.? fassung|deutsche fassung"), "DF"),
     (re.compile(r"od|ohne dialog"), "oD"),
+    # Written out: "Spanisch mit englischen Untertiteln", "Tschechisch | Englisch
+    # mit deutschen UT". Both kinds of subtitles don't match, and stay as written.
+    (re.compile(r".+ mit (?:englischen|engl\.?|en) (?:untertiteln?|ut)"), "OmeU"),
+    (re.compile(r".+ mit (?:deutschen|dt\.?) (?:untertiteln?|ut)"), "OmdU"),
 ]
 # Versions the rules can't read, by their casefolded text.
 OUTLIERS = {
     # Silent film: the intertitles are the original language.
     "russische zwischentitel und deutsche untertitel": "OmdU",
     "deutsche zwischentitel, englische untertitel": "OmeU",
+    # A German film in German: nothing to filter by (other cinemas say nothing).
+    "deutsche originalfassung": None,
 }
 
 
