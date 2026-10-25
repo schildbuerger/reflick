@@ -94,8 +94,13 @@
     }
     .screening {
       display: grid; grid-template-columns: 3.5rem 1fr auto; gap: 0.75rem; align-items: start;
-      padding-block: 0.75rem;
+      padding: 0.75rem;  /* inline padding lines rows up with the day headers */
       border-bottom: 1px solid var(--pico-muted-border-color);
+    }
+    /* A very faint stripe on every other row of a day. Rows the filters hide
+       (Alpine sets display: none) don't count, so visible rows keep alternating. */
+    .screening:nth-child(even of .screening:not([style*="display: none"])) {
+      background: color-mix(in srgb, var(--pico-color) 3%, var(--pico-background-color));
     }
     .screening time { font-variant-numeric: tabular-nums; font-weight: 600; }
     .screening h3 { margin: 0; font-size: 1rem; }
