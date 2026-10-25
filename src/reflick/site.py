@@ -1,7 +1,8 @@
 """Static site: renders upcoming revivals into one HTML page and an iCal feed.
 
 Output layout:
-    index.html        all upcoming revivals across cinemas by day, with filters
+    index.html        all upcoming revivals across cinemas by day, with filters,
+                      and a map view of the cinemas (see berlin_map)
     reflick.ics       calendar feed of all listed screenings
     impressum.html    legal notice, datenschutz.html privacy policy
     static/           Pico CSS and Alpine.js, served with the site
@@ -20,7 +21,7 @@ from zoneinfo import ZoneInfo
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from reflick import db
+from reflick import berlin_map, db
 from reflick.languages import language_version
 from reflick.models import Cinema, RawScreening
 from reflick.revival import is_revival, revival_labels
@@ -234,6 +235,27 @@ def _pairs(values) -> list[tuple[str, str]]:
     return [(v, v) for v in sorted({v for v in values if v}, key=str.casefold)]
 
 
+def map_view(listed: list[Cinema]) -> dict | None:
+    """What the map view needs: outlines, the part of Berlin around the listed
+    cinemas, their pins, the district names that fit, and the projection for
+    the page's script. None when no listed cinema has coordinates."""
+    if not any(c.lat is not None for c in listed):
+        return None
+    geo = berlin_map.berlin_map()
+    p = geo.projection
+    pins = berlin_map.pins(listed, p)
+    box = berlin_map.view_box(listed, p)
+    return {
+        "geo": geo,
+        "view_box": " ".join(f"{v:g}" for v in box),
+        "labels": berlin_map.labelled(geo.districts, box),
+        "pins": pins,
+        # For the page's script: which cinemas each pin stands for, and the projection.
+        "pin_cinemas": {pin.id: [c.id for c in pin.cinemas] for pin in pins},
+        "projection": {"west": p.west, "north": p.north, "scale": p.scale, "k": p.k},
+    }
+
+
 def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) -> int:
     """Write the site to out_dir. Returns the number of screenings listed."""
     now = now or datetime.now(BERLIN)
@@ -266,6 +288,10 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
             "language": i.language or "",
             "genres": i.genres,
             "popularity": i.popularity,
+            # For the map view's cinema cards, which list screenings in the browser.
+            "title": i.title,
+            "time": i.time_label,
+            "url": i.screening.source_url,
             "text": " ".join(
                 # All titles, so "Gold Rush" and "Orchester" both find the Chaplin show.
                 filter(None, (
@@ -285,6 +311,12 @@ def build(conn: sqlite3.Connection, out_dir: Path, now: datetime | None = None) 
         cinemas=listed_cinemas,
         updated=updated.astimezone(BERLIN) if updated else None,
         night_cutoff_hours=NIGHT_CUTOFF // timedelta(hours=1),
+        map=map_view(listed_cinemas),
+        map_cinemas={
+            c.id: {"name": c.name, "district": c.neighbourhood, "lat": c.lat, "lon": c.lon}
+            for c in listed_cinemas
+        },
+        day_short={day.isoformat(): short_day(day) for day, _ in by_day(items)},
     )
     (out_dir / "index.html").write_text(index, encoding="utf-8")
     (out_dir / "reflick.ics").write_text(render_ics(items, now), encoding="utf-8", newline="")

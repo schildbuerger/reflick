@@ -92,6 +92,171 @@
     .daystrip .chip[aria-pressed=true] small { color: inherit; opacity: 0.8; }
     .daystrip .chip:disabled { opacity: 0.35; cursor: default; }
     .daystrip .arrow { width: var(--day-strip-height); padding: 0; font-size: 1.1rem; }
+    /* Date strip and, at the right end of the row, the List/Map switch. The
+       strip takes the remaining width and scrolls; the switch never shrinks. */
+    .daybar { display: flex; align-items: flex-start; gap: 0.5rem; }
+    .daybar .daystrip { flex: 1; min-width: 0; }
+    /* Two joined chips. Pico styles every role=group as a full-width button
+       group (which squeezed the date strip to nothing), hence the overrides. */
+    .viewtoggle[role=group] {
+      display: flex; flex: none; width: auto; margin: var(--day-strip-gap) 0 0; box-shadow: none;
+    }
+    .viewtoggle[role=group] > button {
+      flex: none; margin: 0; height: var(--day-strip-height); padding: 0 0.85rem;
+      border: 1px solid var(--pico-muted-border-color); background: transparent; color: inherit;
+      box-shadow: none; font-size: 0.8rem; line-height: 1;
+    }
+    .viewtoggle[role=group] > button:first-child { border-radius: 1rem 0 0 1rem; }
+    .viewtoggle[role=group] > button:last-child { border-radius: 0 1rem 1rem 0; margin-left: -1px; }
+    .viewtoggle[role=group] > button:hover { border-color: var(--pico-primary-border); }
+    .viewtoggle[role=group] > button[aria-pressed=true] {
+      background: var(--pico-primary-background); border-color: var(--pico-primary-background);
+      color: var(--pico-primary-inverse);
+    }
+    /* Map view (_map.html). The map is drawn in SVG units; everything inside
+       a .mark is scaled by --u (SVG units per screen pixel, set by the page's
+       script), so pins and labels below are sized in screen pixels. */
+    /* The map view fills the rest of the screen below the filters, so map and
+       legend are seen whole without scrolling: --map-top is where it starts on
+       the page, measured by the script. The map grows or shrinks to fit; the
+       cards scroll on their own. The footer follows below (the Impressum must
+       stay reachable). Very small screens get a minimum height and scroll. */
+    .mapview {
+      /* The page's colours, taken here: Pico sets --pico-background-color and
+         --pico-color to button colours on every button and role=button
+         element, which the pins and zoom buttons are. */
+      --map-page: var(--pico-background-color); --map-text: var(--pico-color);
+      display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; min-height: 26rem;
+      height: calc(100vh - var(--map-top, 12rem) - 0.75rem);
+      height: calc(100dvh - var(--map-top, 12rem) - 0.75rem);
+    }
+    .mapgrid { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+    .mapcol { flex: 3 1 0; min-height: 0; display: flex; flex-direction: column; }
+    /* Location button and hint, floating in the map's top-left corner, clear
+       of the zoom buttons. The row itself lets taps and drags through to the
+       map; only the button and the hint catch them. */
+    .maptools {
+      position: absolute; top: 0.5rem; left: 0.5rem; right: 3.5rem; z-index: 1;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; pointer-events: none;
+    }
+    .maptools > * { pointer-events: auto; }
+    /* button.secondary.outline: outweighs Pico's transparent outline buttons. */
+    .maptools button.secondary.outline {
+      width: auto; margin: 0; padding: 0.3rem 0.7rem; font-size: 0.8rem;
+      background: var(--map-page); box-shadow: 0 0.1rem 0.3rem rgb(0 0 0 / 0.2);
+    }
+    .maptools small {
+      padding: 0.15rem 0.5rem; border-radius: var(--pico-border-radius); font-size: 0.75rem;
+      background: color-mix(in srgb, var(--map-page) 85%, transparent); color: var(--pico-muted-color);
+    }
+    /* Phones: a row above the map instead, so it covers none of the small map. */
+    @media (max-width: 576px) {
+      .maptools { position: static; gap: 0.5rem; margin-bottom: 0.5rem; pointer-events: auto; }
+      .maptools button.secondary.outline {
+        padding: 0.3rem 0.8rem; font-size: 0.85rem; background: transparent; box-shadow: none;
+      }
+      .maptools small { padding: 0; background: none; font-size: 0.8rem; }
+    }
+    .berlin {
+      --u: 2; --water: color-mix(in srgb, #3b82f6 45%, var(--map-page));
+      display: block; position: absolute; inset: 0; width: 100%; height: 100%;
+      /* The page's script handles touch on the map: pinch zooms the map, not the page. */
+      touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+      border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius);
+      /* Outside Berlin a light grey, the districts in the page colour, so the city stands out. */
+      background: color-mix(in srgb, var(--map-text) 7%, var(--map-page));
+    }
+    .berlin.dragging { cursor: grabbing; }
+    /* The map's box; the SVG fills it, the zoom buttons float in its corner. */
+    .mapframe { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+    .mapcanvas { position: relative; flex: 1 1 0; min-height: 0; }
+    /* Zoom buttons: three separate squares with the pins' blue outline and
+       SVG icons (text glyphs like ⤢ sit differently in every font). The
+       selectors must outweigh Pico's joined-button-group styles, such as
+       `[role=group] [type=button]:not(:first-child)`, which would shift all
+       but the first button 1px to the left. */
+    .zoombar[role=group] {
+      position: absolute; top: 0.5rem; right: 0.5rem; z-index: 1;
+      display: flex; flex-direction: column; gap: 0.3rem; width: auto; margin: 0; box-shadow: none;
+    }
+    .zoombar[role=group] > button[type=button] {
+      display: flex; align-items: center; justify-content: center; flex: none;
+      width: 2.25rem; height: 2.25rem; margin: 0; padding: 0;
+      border: 1.5px solid var(--pico-primary-background); border-radius: var(--pico-border-radius);
+      background: var(--map-page); color: var(--map-text);
+      box-shadow: 0 0.1rem 0.3rem rgb(0 0 0 / 0.2);
+    }
+    .zoombar[role=group] > button[type=button] svg {
+      width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round;
+    }
+    .zoombar[role=group] > button[type=button]:hover:not(:disabled) { background: color-mix(in srgb, var(--pico-primary-background) 15%, var(--map-page)); }
+    .zoombar[role=group] > button[type=button]:disabled {
+      opacity: 1; color: var(--pico-muted-border-color); border-color: var(--pico-muted-border-color);
+    }
+    /* In map mode the page is screen-high, so the filter bar needn't stick;
+       sticking, it would cover the map's top whenever the page is scrolled. */
+    .map-mode .filterbar { position: static; }
+    .berlin path { vector-effect: non-scaling-stroke; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+    /* District borders: solid and clearly darker than the fill, in light and dark mode. */
+    .berlin .districts path {
+      fill: var(--map-page);
+      stroke: color-mix(in srgb, var(--map-text) 38%, var(--map-page)); stroke-width: 1.25;
+    }
+    .berlin .water { stroke: var(--water); stroke-width: 3; }
+    /* The Ringbahn: dashed and lighter, so it isn't mistaken for a border. */
+    .berlin .ring {
+      stroke: color-mix(in srgb, var(--map-text) 30%, var(--map-page));
+      stroke-width: 1.5; stroke-dasharray: 6 4;
+    }
+    .berlin .mark { transform: scale(var(--u)); }
+    .berlin .district-label {
+      font-size: 10px; text-anchor: middle; fill: var(--pico-muted-color); opacity: 0.8; pointer-events: none;
+    }
+    .berlin .pin { cursor: pointer; outline: none; }
+    .berlin .pin.none { display: none; }
+    .berlin .pin circle { stroke: var(--map-page); stroke-width: 2; }
+    .berlin .pin text { font-size: 11px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+    /* Today: filled and glowing, the number is today's screenings. */
+    .berlin .pin.today circle {
+      fill: var(--pico-primary-background);
+      filter: drop-shadow(0 0 4px color-mix(in srgb, var(--pico-primary) 70%, transparent));
+    }
+    .berlin .pin.today text { fill: var(--pico-primary-inverse); }
+    /* Later days only: hollow, with the blue outline. */
+    .berlin .pin.later circle { fill: var(--map-page); stroke: var(--pico-primary-background); stroke-width: 2; }
+    .berlin .pin[aria-pressed=true] circle, .berlin .pin:focus-visible circle { stroke: var(--map-text); stroke-width: 3; }
+    .berlin .here circle { fill: color-mix(in srgb, #3b82f6 25%, transparent); stroke: #3b82f6; stroke-width: 2; }
+    .berlin .here .dot { fill: #3b82f6; stroke: none; }
+    .legend { flex: none; margin: 0.4rem 0 0; font-size: 0.8rem; }
+    .legend .key {
+      display: inline-block; width: 0.8rem; height: 0.8rem; margin: 0 0.3rem 0 0.75rem;
+      border-radius: 50%; vertical-align: -0.1rem;
+    }
+    .legend .key:first-child { margin-left: 0; }
+    .legend .key.today { background: var(--pico-primary-background); }
+    .legend .key.later { border: 2px solid var(--pico-primary-background); }
+    /* Phones: the cards scroll below the map; wide screens: beside it. */
+    .cards {
+      flex: 2 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; position: relative;
+      display: grid; gap: 0.75rem; align-content: start; padding: 2px;  /* room for the selected outline */
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    }
+    .card { margin: 0; padding: 0.75rem; }
+    @media (min-width: 992px) {
+      .mapgrid { flex-direction: row; gap: 1rem; }
+      .mapcol, .mapgrid .cards { flex: 1 1 0; }
+      .mapgrid .cards { grid-template-columns: 1fr; }
+    }
+    .card.selected { outline: 2px solid var(--pico-primary); }
+    .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 0.5rem; margin-bottom: 0.4rem; }
+    .card ul { padding: 0; margin: 0 0 0.5rem; font-size: 0.875rem; }
+    /* Today's screenings stand out; other days are muted. */
+    .card li { list-style: none; margin: 0; padding: 0.15rem 0 0.15rem 0.5rem; border-left: 3px solid transparent; color: var(--pico-muted-color); }
+    .card li a { color: inherit; }
+    .card li.today { border-left-color: var(--pico-primary); color: var(--pico-color); }
+    .card li.today .when { color: var(--pico-primary); font-weight: 700; }
+    .card .when { margin-right: 0.4rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .card .more { width: auto; margin: 0; padding: 0.25rem 0.7rem; font-size: 0.8rem; }
     .list { scroll-margin-top: var(--sticky-top); }
     .day h2 {
       position: sticky; top: var(--sticky-top); z-index: 1;
@@ -183,6 +348,8 @@
       Times can change, so check with the cinema before you go.
       Titles from <a href="https://www.wikidata.org/">Wikidata</a> (CC0),
       genres from <a href="https://www.omdbapi.com/">OMDb</a> (CC BY-NC 4.0).
+      {% if map %}Map: districts from Berlin's open data (ALKIS), rivers and Ringbahn
+      © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.{% endif %}
       {% if updated %}Updated {{ updated.strftime("%d.%m.%Y, %H:%M") }}.{% endif %}
     </p>
     <p><a href="reflick.ics">Subscribe to the calendar (iCal)</a></p>

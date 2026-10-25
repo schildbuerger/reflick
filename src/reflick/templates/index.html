@@ -23,6 +23,107 @@
       const FILTERS = ["q", "days", ...Object.keys(LABELS), ...EXCLUDABLE.map((key) => `${key}Out`)];
       const NIGHT_CUTOFF_MS = {{ night_cutoff_hours }} * 3600 * 1000;
       const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      // Map view (see _map.html): cinemas by id, each pin's cinemas, the
+      // projection berlin_map.py drew the map with, and short day names.
+      const MAP_CINEMAS = {{ map_cinemas | tojson }};
+      const PIN_CINEMAS = {{ (map.pin_cinemas if map else {}) | tojson }};
+      const PROJECTION = {{ (map.projection if map else none) | tojson }};
+      const DAY_SHORT = {{ day_short | tojson }};
+      const PIN_OF = Object.fromEntries(
+        Object.entries(PIN_CINEMAS).flatMap(([pin, ids]) => ids.map((id) => [id, pin])));
+      // Zoom and pan for the map: pinch and drag on touch screens, wheel (or
+      // trackpad) and drag with a mouse, and the +/− buttons. It changes the
+      // SVG's viewBox, between the whole map (1×) and MAX_ZOOM×, never beyond
+      // the map's own frame. `onChange` gets the zoom level after each change.
+      const MAX_ZOOM = 4;
+      const zoomable = (svg, onChange) => {
+        const initial = svg.viewBox.baseVal;
+        const full = { x: initial.x, y: initial.y, w: initial.width, h: initial.height };
+        let box = { ...full };
+        const pointers = new Map();  // pressed fingers or mouse buttons by id
+        let moved = 0;  // px moved since the last press, to tell a drag from a tap
+        const unitsPerPx = () => Math.max(box.w / svg.clientWidth, box.h / svg.clientHeight);
+        const toMap = (x, y) => new DOMPoint(x, y).matrixTransform(svg.getScreenCTM().inverse());
+        const apply = () => {
+          box.x = Math.max(Math.min(box.x, full.x + full.w - box.w), full.x);
+          box.y = Math.max(Math.min(box.y, full.y + full.h - box.h), full.y);
+          svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.w} ${box.h}`);
+          rescale();
+          onChange(full.w / box.w);
+        };
+        // Pins and labels keep their size on screen at any zoom and map size:
+        // --u is SVG units per CSS pixel, and the CSS scales by it.
+        const rescale = () => {
+          if (svg.clientWidth && svg.clientHeight) svg.style.setProperty("--u", unitsPerPx());
+        };
+        // Zoom by `factor` keeping the point under (x, y) in place, or the centre.
+        const zoomAt = (factor, x, y) => {
+          const zoom = Math.min(Math.max((full.w / box.w) * factor, 1), MAX_ZOOM);
+          const p = x === undefined ? { x: box.x + box.w / 2, y: box.y + box.h / 2 } : toMap(x, y);
+          const w = full.w / zoom;
+          const h = full.h / zoom;
+          box = zoom === 1 ? { ...full }  // fully out: exactly the original frame
+            : { x: p.x - ((p.x - box.x) * w) / box.w, y: p.y - ((p.y - box.y) * h) / box.h, w, h };
+          apply();
+        };
+        const panBy = (dx, dy) => {
+          const u = unitsPerPx();
+          box.x -= dx * u;
+          box.y -= dy * u;
+          apply();
+        };
+        svg.addEventListener("wheel", (event) => {
+          event.preventDefault();  // zoom the map, not the page
+          // A trackpad pinch arrives as a wheel event with ctrlKey, in smaller steps.
+          zoomAt(Math.exp(-event.deltaY * (event.ctrlKey ? 0.01 : 0.002)), event.clientX, event.clientY);
+        }, { passive: false });
+        svg.addEventListener("pointerdown", (event) => {
+          pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+          if (pointers.size === 1) moved = 0;
+        });
+        svg.addEventListener("pointermove", (event) => {
+          const last = pointers.get(event.pointerId);
+          if (!last) return;
+          const now = { x: event.clientX, y: event.clientY };
+          if (pointers.size === 1) {
+            moved += Math.abs(now.x - last.x) + Math.abs(now.y - last.y);
+            if (moved > 4) {
+              // Only a drag captures the pointer, so a tap still reaches the pin under it.
+              if (!svg.hasPointerCapture(event.pointerId)) svg.setPointerCapture(event.pointerId);
+              svg.classList.add("dragging");
+              panBy(now.x - last.x, now.y - last.y);
+            }
+          } else if (pointers.size === 2) {
+            const other = [...pointers.entries()].find(([id]) => id !== event.pointerId)[1];
+            const before = Math.hypot(last.x - other.x, last.y - other.y);
+            const after = Math.hypot(now.x - other.x, now.y - other.y);
+            moved += 100;  // a pinch is never a tap
+            zoomAt(after / (before || 1), (now.x + other.x) / 2, (now.y + other.y) / 2);
+            panBy((now.x - last.x) / 2, (now.y - last.y) / 2);
+          }
+          pointers.set(event.pointerId, now);
+        });
+        const release = (event) => {
+          pointers.delete(event.pointerId);
+          if (!pointers.size) svg.classList.remove("dragging");
+        };
+        svg.addEventListener("pointerup", release);
+        svg.addEventListener("pointercancel", release);
+        return {
+          zoomBy: (factor) => zoomAt(factor),
+          reset: () => { box = { ...full }; apply(); },
+          rescale,
+          dragged: () => moved > 4,  // the click that ends a drag or pinch is no tap
+        };
+      };
+      let zoomer = null;  // the map's zoom controls, once the page has started
+      // Distance as the crow flies, in km (haversine).
+      const km = (a, b) => {
+        const rad = Math.PI / 180;
+        const h = Math.sin((b.lat - a.lat) * rad / 2) ** 2
+          + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad / 2) ** 2;
+        return 12742 * Math.asin(Math.sqrt(h));
+      };
       Alpine.data("listing", () => ({
         // Each filter holds any number of picked values; none picked means all.
         q: "",
@@ -38,8 +139,32 @@
         dayCounts: {},  // matches per day under all filters except the date
         scrolledFar: false,  // shows the back-to-top button (phones only, see CSS)
         upcomingDays: new Set(rows.map((r) => r.day)),  // days with screenings still to come
+        view: "list",  // or "map"; every visit starts with the list
+        today: "",  // today's programme day (ISO); its screenings stand out on the map
+        byCinema: {},  // visible rows per cinema, in start order
+        selected: null,  // the pin picked on the map
+        // Where the visitor said they are, {lat, lon}: only from the location
+        // button or a tap on the map, and never stored or sent anywhere.
+        here: null,
+        locating: false,
+        locateError: "",
+        zoomLevel: 1,  // 1 = the whole map; disables the zoom buttons at the limits
+        maxZoom: MAX_ZOOM,
         init() {
           for (const key of FILTERS) this.$watch(key, () => this.update());
+          // In map mode the map view fills the screen below the filters (see the
+          // CSS): start at the top of the page. Where the view begins is measured
+          // once it's shown (a ResizeObserver on it, see _map.html), as a hidden
+          // element has no position.
+          this.$watch("view", (view) => {
+            if (view === "map") window.scrollTo(0, 0);
+          });
+          window.addEventListener("resize", () => this.fitMap());
+          const map = this.$refs?.map;
+          if (map) {
+            zoomer = zoomable(map, (zoom) => { this.zoomLevel = zoom; });
+            if (window.ResizeObserver) new ResizeObserver(() => zoomer.rescale()).observe(map);
+          }
           this.update();
           // The site is built once a day, so screenings that have started since
           // are hidden here, and again every minute while the page stays open.
@@ -51,6 +176,7 @@
           if (bar && window.ResizeObserver) {
             new ResizeObserver(() => {
               document.documentElement.style.setProperty("--sticky-top", `${bar.offsetHeight}px`);
+              this.fitMap();  // the filters wrapped onto more or fewer lines
             }).observe(bar);
           }
         },
@@ -74,7 +200,113 @@
           const counts = {};
           for (const r of matching) counts[r.day] = (counts[r.day] || 0) + 1;
           this.dayCounts = counts;
-          this.visible = new Set(matching.filter((r) => any(this.days, r.day)).map((r) => r.id));
+          const shown = matching.filter((r) => any(this.days, r.day));
+          this.visible = new Set(shown.map((r) => r.id));
+          this.today = isoDay(new Date(now - NIGHT_CUTOFF_MS));
+          const byCinema = {};
+          for (const r of shown) (byCinema[r.cinema] ||= []).push(r);
+          this.byCinema = byCinema;
+        },
+        fitMap() {
+          const section = this.$refs?.mapview;
+          if (this.view !== "map" || !section || !section.offsetParent) return;  // hidden
+          const top = section.getBoundingClientRect().top + window.scrollY;
+          document.documentElement.style.setProperty("--map-top", `${top}px`);
+        },
+        // Map pins: "today" if a cinema of the pin shows something today, else
+        // "later" if it does on another picked day, else "none" (hidden).
+        pinRows(pin) {
+          return (PIN_CINEMAS[pin] || []).flatMap((id) => this.byCinema[id] || []);
+        },
+        pinState(pin) {
+          const found = this.pinRows(pin);
+          return found.some((r) => r.day === this.today) ? "today" : found.length ? "later" : "none";
+        },
+        // Only lit pins carry a number: how many screenings are still to come today.
+        pinCount(pin) {
+          return this.pinRows(pin).filter((r) => r.day === this.today).length || "";
+        },
+        zoomBy(factor) {
+          zoomer?.zoomBy(factor);
+        },
+        resetZoom() {
+          zoomer?.reset();
+        },
+        // True for the click that ends dragging or pinching the map, which isn't a tap.
+        dragged() {
+          return Boolean(zoomer?.dragged());
+        },
+        // Picking a pin scrolls its card into view within the cards' own list;
+        // scrollIntoView would scroll the page too, hiding the map's top under
+        // the filter bar.
+        select(pin) {
+          this.selected = this.selected === pin ? null : pin;
+          const card = this.selected && document.getElementById(`card-${PIN_CINEMAS[pin][0]}`);
+          if (card) this.$nextTick(() => card.parentElement.scrollTo({ top: card.offsetTop - 4, behavior: "smooth" }));
+        },
+        isSelected(cinema) {
+          return this.selected !== null && PIN_OF[cinema] === this.selected;
+        },
+        // One card per cinema with matching screenings: nearest first once the
+        // visitor has said where they are, else those showing something today.
+        cards() {
+          const cards = Object.entries(this.byCinema).map(([id, found]) => {
+            const cinema = MAP_CINEMAS[id];
+            return {
+              id, ...cinema, rows: found,
+              todayCount: found.filter((r) => r.day === this.today).length,
+              km: this.here && cinema.lat !== null ? km(this.here, cinema) : null,
+            };
+          });
+          return cards.sort((a, b) => this.here
+            ? (a.km ?? Infinity) - (b.km ?? Infinity)
+            : (b.todayCount > 0) - (a.todayCount > 0) || a.rows[0].start - b.rows[0].start);
+        },
+        kmLabel(distance) {
+          const metres = Math.max(50, Math.round(distance * 20) * 50);
+          return metres < 1000 ? `${metres} m` : `${distance.toFixed(1)} km`;
+        },
+        rowWhen(r) {
+          return `${this.dayLabel(r.day, DAY_SHORT[r.day])}, ${r.time}`;
+        },
+        showInList(cinema) {
+          this.cinemas = [cinema];
+          this.view = "list";
+          this.$nextTick(() => this.$refs.list.scrollIntoView({ behavior: "smooth" }));
+        },
+        hereTransform() {
+          if (!this.here) return "";
+          const { west, north, scale, k } = PROJECTION;
+          return `translate(${(this.here.lon - west) * k * scale} ${(north - this.here.lat) * scale})`;
+        },
+        // A tap on the map (not on a pin) sets where the visitor is.
+        setHere(event) {
+          const map = this.$refs.map;
+          const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(map.getScreenCTM().inverse());
+          const { west, north, scale, k } = PROJECTION;
+          this.here = { lon: west + point.x / (k * scale), lat: north - point.y / scale };
+          this.locateError = "";
+        },
+        locate() {
+          if (!navigator.geolocation) {
+            this.locateError = "This browser can't tell your location; tap the map instead.";
+            return;
+          }
+          this.locating = true;
+          this.locateError = "";
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              this.locating = false;
+              this.here = { lat: position.coords.latitude, lon: position.coords.longitude };
+            },
+            (error) => {
+              this.locating = false;
+              this.locateError = error.code === error.PERMISSION_DENIED
+                ? "Location not allowed; tap the map where you are instead."
+                : "Couldn't get your location; tap the map where you are instead.";
+            },
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+          );
         },
         label(key) {
           const [none, plural, show] = LABELS[key];
@@ -139,7 +371,8 @@
 
 {% block content %}
 {% from "_multiselect.html" import multiselect %}
-<div x-data="listing" @scroll.window.passive="scrolledFar = window.scrollY > 2 * window.innerHeight">
+<div x-data="listing" :class="{ 'map-mode': view === 'map' }"
+     @scroll.window.passive="scrolledFar = window.scrollY > 2 * window.innerHeight">
   <a href="#" class="to-top" x-cloak x-show="scrolledFar" aria-label="Back to top"
      @click.prevent="window.scrollTo({ top: 0, behavior: 'smooth' })">↑</a>
   <div class="filterbar" x-ref="bar" x-cloak>
@@ -157,27 +390,39 @@
 
     {% if days %}
     {# Date strip: one chip per day with screenings; the number counts matches
-       under the other filters, so busy days stand out. Several days can be picked. #}
-    <div class="daystrip" role="group" aria-label="Dates">
-      <button type="button" class="arrow" @click="scrollDays(-1)" aria-label="Earlier dates">‹</button>
-      <div class="days" x-ref="days">
-        <button type="button" class="chip" :aria-pressed="days.length === 0" @click="allDays()">All dates</button>
-        {% for day, _ in days %}
-        {% set iso = day.isoformat() %}
-        <button type="button" class="chip" data-day="{{ iso }}" x-show="upcomingDays.has('{{ iso }}')"
-                :aria-pressed="days.includes('{{ iso }}')" :disabled="!dayCounts['{{ iso }}']"
-                @click="toggleDay('{{ iso }}')">
-          <span x-text="dayLabel('{{ iso }}', '{{ day | short_day }}')">{{ day | short_day }}</span>
-          <small x-text="dayCounts['{{ iso }}'] || 0"></small>
-        </button>
-        {% endfor %}
+       under the other filters, so busy days stand out. Several days can be picked.
+       The List/Map switch sits at the right end of the same row, outside the
+       scrolling strip. #}
+    <div class="daybar">
+      <div class="daystrip" role="group" aria-label="Dates">
+        <button type="button" class="arrow" @click="scrollDays(-1)" aria-label="Earlier dates">‹</button>
+        <div class="days" x-ref="days">
+          <button type="button" class="chip" :aria-pressed="days.length === 0" @click="allDays()">All dates</button>
+          {% for day, _ in days %}
+          {% set iso = day.isoformat() %}
+          <button type="button" class="chip" data-day="{{ iso }}" x-show="upcomingDays.has('{{ iso }}')"
+                  :aria-pressed="days.includes('{{ iso }}')" :disabled="!dayCounts['{{ iso }}']"
+                  @click="toggleDay('{{ iso }}')">
+            <span x-text="dayLabel('{{ iso }}', '{{ day | short_day }}')">{{ day | short_day }}</span>
+            <small x-text="dayCounts['{{ iso }}'] || 0"></small>
+          </button>
+          {% endfor %}
+        </div>
+        <button type="button" class="arrow" @click="scrollDays(1)" aria-label="Later dates">›</button>
       </div>
-      <button type="button" class="arrow" @click="scrollDays(1)" aria-label="Later dates">›</button>
+      {% if map %}
+      <div class="viewtoggle" role="group" aria-label="View">
+        <button type="button" :aria-pressed="view === 'list'" @click="view = 'list'">List</button>
+        <button type="button" :aria-pressed="view === 'map'" @click="view = 'map'">Map</button>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
   </div>
 
-  <div class="list" x-ref="list">
+  {% if map %}{% include "_map.html" %}{% endif %}
+
+  <div class="list" x-ref="list" x-show="view === 'list'">
     {% if not days %}
     <p>No upcoming revival screenings right now.</p>
     {% endif %}

@@ -239,3 +239,35 @@ def test_popularity_thresholds(votes, expected):
         id=0, screening=None, cinema=None, start=NOW, title="x", labels=[], genres=[], imdb_votes=votes
     )
     assert item.popularity == expected
+
+
+def test_map_view_shows_located_cinemas_and_rows_carry_card_details(tmp_path):
+    conn = seeded_db(tmp_path)  # Lichtblick has coordinates
+    out = tmp_path / "site"
+    site.build(conn, out, now=NOW)
+    index = (out / "index.html").read_text(encoding="utf-8")
+    assert '<svg class="berlin"' in index
+    assert '@click="view = \'map\'"' in index  # the List/Map switch
+    # It sits beside the scrolling date strip, not inside it (where it squeezed the chips).
+    strip = index.split('<div class="daystrip"')[1].split('<div class="viewtoggle"')[0]
+    assert strip.count("</div>") == strip.count("<div") + 1  # the strip is closed before the switch
+    assert 'view: "list",' in index and "#map" not in index  # every visit starts with the list
+    pin = r'<g class="pin" transform="translate\([\d.]+ [\d.]+\)" :class="pinState\(\'lichtblick\'\)"'
+    assert re.search(pin, index)
+    assert "OpenStreetMap" in index  # credited in the footer
+    rows = json.loads(re.search(r'<script type="application/json" id="rows">(.*?)</script>', index, re.S).group(1))
+    casablanca = next(r for r in rows if r["title"] == "Casablanca")
+    assert casablanca["time"] == "24:00"
+    assert casablanca["url"] == "https://lichtblick-kino.org/casablanca/"
+    assert '"lichtblick": ["lichtblick"]' in index  # which cinemas each pin stands for
+
+
+def test_no_map_without_coordinates(tmp_path):
+    conn = seeded_db(tmp_path)
+    db.upsert_cinema(conn, Cinema(CINEMA.id, CINEMA.name, CINEMA.address, CINEMA.neighbourhood, CINEMA.website))
+    out = tmp_path / "site"
+    site.build(conn, out, now=NOW)
+    index = (out / "index.html").read_text(encoding="utf-8")
+    assert '<svg class="berlin"' not in index
+    assert "view = 'map'" not in index
+    assert "Casablanca" in index  # the list is unaffected

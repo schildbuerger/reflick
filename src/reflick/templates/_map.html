@@ -1,0 +1,86 @@
+{# Map view: the cinemas on an outline map of Berlin (see berlin_map.py), and
+   beside or below it a card per cinema with its next matching screenings.
+   Needs JavaScript, so it's hidden without; the list stays the page's content.
+   Pins light up for cinemas showing something today, and today's screenings
+   stand out in the cards. "Where you are" is only ever asked for by a button
+   or a tap, kept in the page while it's open, and never sent or stored. #}
+<section class="mapview" x-ref="mapview" x-show="view === 'map'" x-cloak aria-label="Map of the cinemas"
+         x-init="window.ResizeObserver && new ResizeObserver(() => fitMap()).observe($el)">
+  <div class="mapgrid">
+    <div class="mapcol">
+      <div class="mapframe">
+        {# Location floats in the map's top-left corner (above the map on
+           phones, where it would cover too much of it), zoom top right. #}
+        <div class="maptools">
+          <button type="button" class="secondary outline" @click="locate()" :aria-busy="locating">Use my location</button>
+          <button type="button" class="secondary outline" x-show="here" @click="here = null">Forget location</button>
+          <small aria-live="polite"
+                 x-text="locateError || (here ? 'Sorted by distance, as the crow flies.' : 'Or tap the map where you are.')"></small>
+        </div>
+        <div class="mapcanvas">
+          <div class="zoombar" role="group" aria-label="Zoom">
+            <button type="button" @click="zoomBy(1.6)" :disabled="zoomLevel >= maxZoom" aria-label="Zoom in">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 3v10M3 8h10"/></svg>
+            </button>
+            <button type="button" @click="zoomBy(1 / 1.6)" :disabled="zoomLevel <= 1" aria-label="Zoom out">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h10"/></svg>
+            </button>
+            <button type="button" @click="resetZoom()" :disabled="zoomLevel <= 1" aria-label="Show the whole map">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></svg>
+            </button>
+          </div>
+          <svg class="berlin" x-ref="map" viewBox="{{ map.view_box }}" preserveAspectRatio="xMidYMid meet"
+               role="group" aria-labelledby="map-title" @click="dragged() || setHere($event)">
+            <title id="map-title">Map of Berlin with the cinemas showing matching screenings</title>
+            <g class="districts">
+              {% for d in map.geo.districts %}<path d="{{ d.path }}"/>{% endfor %}
+            </g>
+            <path class="water" d="{{ map.geo.water }}"/>
+            <path class="ring" d="{{ map.geo.ring }}"/>
+            {% for d in map.labels %}
+            <g transform="translate({{ d.label[0] }} {{ d.label[1] }})"><text class="district-label mark">{{ d.name }}</text></g>
+            {% endfor %}
+            <g class="here" x-show="here" :transform="hereTransform()">
+              <g class="mark"><circle r="9"/><circle class="dot" r="3"/></g>
+            </g>
+            {% for pin in map.pins %}
+            <g class="pin" transform="translate({{ pin.x }} {{ pin.y }})" :class="pinState('{{ pin.id }}')"
+               role="button" tabindex="0" aria-label="{{ pin.name }}" :aria-pressed="selected === '{{ pin.id }}'"
+               @click.stop="dragged() || select('{{ pin.id }}')" @keydown.enter.prevent="select('{{ pin.id }}')"
+               @keydown.space.prevent="select('{{ pin.id }}')">
+              <title>{{ pin.name }}</title>
+              <g class="mark"><circle r="10"/><text dy="0.35em" x-text="pinCount('{{ pin.id }}')"></text></g>
+            </g>
+            {% endfor %}
+          </svg>
+        </div>
+      </div>
+      <p class="legend muted">
+        <span class="key today"></span>Showing today (number: today's screenings)
+        <span class="key later"></span>Later days only
+      </p>
+    </div>
+
+    <div class="cards">
+      <template x-for="card in cards()" :key="card.id">
+        <article class="card" :id="`card-${card.id}`" :class="{ selected: isSelected(card.id) }">
+          <div class="card-head">
+            <strong x-text="card.name"></strong>
+            <small class="muted" x-text="[card.district, card.km !== null && kmLabel(card.km)].filter(Boolean).join(' · ')"></small>
+          </div>
+          <ul>
+            <template x-for="r in card.rows.slice(0, 4)" :key="r.id">
+              <li :class="{ today: r.day === today }">
+                <span class="when" x-text="rowWhen(r)"></span>
+                <a :href="r.url" target="_blank" rel="noopener" x-text="r.title"></a>
+              </li>
+            </template>
+          </ul>
+          <button type="button" class="secondary outline more" @click="showInList(card.id)"
+                  x-text="card.rows.length > 4 ? `All ${card.rows.length} in the list` : 'Show in the list'"></button>
+        </article>
+      </template>
+    </div>
+  </div>
+  <p x-show="!Object.keys(byCinema).length">No screenings match these filters.</p>
+</section>

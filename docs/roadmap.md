@@ -137,6 +137,16 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       phone
 - [x] Every other screening row of a day has a faint stripe; rows hidden by
       the filters don't count, so the visible ones keep alternating
+- [~] Map view (List/Map switch at the right of the date strip; every visit
+      starts with the list): an outline map of
+      Berlin drawn into the page (districts, rivers, Ringbahn; no tiles, no
+      third party), with a pin per cinema that follows the filters. Pins of
+      cinemas showing something today light up with the number of today's
+      screenings; cards below list each cinema's next screenings, today's
+      highlighted. Zoomable up to 4× (pinch, wheel or +/−) and draggable.
+      "Near me" by the location button or a tap on the map,
+      computed in the browser only. Built and tested in code; still to check
+      in a real browser and on a phone
 
 ## 8. Hosting and operations
 

@@ -44,13 +44,18 @@ a group, suddenly has no screenings, which usually means its site changed.
 ```bash
 uv sync                           # creates .venv with the exact versions in uv.lock
 .venv/bin/pytest
-.venv/bin/ruff check src tests    # lint, also run in CI
+.venv/bin/ruff check              # lint, also run in CI
 .venv/bin/reflick scrape          # fetch all sources, look up titles and genres, rebuild the site
 .venv/bin/reflick scrape --source yorck  # just one source
 .venv/bin/reflick enrich          # only look up titles and genres (--retry: re-check films not found)
 .venv/bin/reflick build           # rebuild the site from the database only
 .venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
+
+The map view's outlines (districts, Spree and Havel, Ringbahn) are in
+`src/reflick/berlin_map.json`, made once by `scripts/make_berlin_map.py` from
+Berlin's open data and OpenStreetMap; rerun it only to change the map. Cinema
+coordinates live with each adapter's address (Yorck's come with its data).
 
 Add or update packages with `uv add <package>` (`uv add --dev` for tools) or
 `uv lock --upgrade`, which keep `pyproject.toml` and `uv.lock` in step.

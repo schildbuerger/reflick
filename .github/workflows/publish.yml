@@ -56,7 +56,7 @@ jobs:
         run: uv sync --locked
 
       - name: Lint
-        run: ruff check src tests
+        run: ruff check
 
       - name: Test
         run: pytest -q

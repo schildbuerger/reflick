@@ -10,7 +10,7 @@ Python 3.14 (`.python-version`), managed with uv: `uv sync` builds `.venv` from 
 
 ```bash
 uv sync
-.venv/bin/ruff check src tests                     # lint (CI fails on findings)
+.venv/bin/ruff check                               # lint (CI fails on findings)
 .venv/bin/pytest                                   # all tests (offline, use HTML fixtures)
 .venv/bin/pytest tests/test_yorck.py -k film_page  # one file / one test
 .venv/bin/reflick scrape [--source yorck] [--no-build]  # fetch, enrich via OMDb, build site
@@ -37,7 +37,7 @@ Pipeline: **adapters → SQLite snapshots → enrichment → static site**.
   1. Wikidata (`film_titles`): German title, original title, IMDb id and first release year (used by the revival rule instead of the cinema's year), via full-text search with year ±1 and director check, or by IMDb id when OMDb already knows the film. Uses the Wikidata Action API directly, not the `Fetcher`: robots.txt disallows `/w/`, but Wikimedia's robot policy permits API use with one request at a time (~1/s) and a contact User-Agent. Don't add other robots.txt exceptions, and don't use the SPARQL endpoint.
   2. OMDb (`film_matches`): genres. By Wikidata's IMDb id when there is one, else by title variants, year ±1 and director.
   `db.film_info` merges both for the site: heading is the German title, original title shown underneath when it differs.
-- **Site** (`site.py`, Jinja2 templates in `src/reflick/templates/`): writes `index.html` (single page grouped by day; screenings after midnight belong to the evening before), `reflick.ics`, `impressum.html`, `datenschutz.html`. Pico CSS and Alpine.js are vendored in `src/reflick/static/` (no CDN, no JS build step). Every screening is rendered as plain HTML and Alpine only hides non-matching rows, so the page must keep working without JavaScript. All links must stay relative (served under a GitHub Pages sub-path).
+- **Site** (`site.py`, Jinja2 templates in `src/reflick/templates/`): writes `index.html` (single page grouped by day; screenings after midnight belong to the evening before), `reflick.ics`, `impressum.html`, `datenschutz.html`. The index has a List/Map switch: the map (`berlin_map.py`, `templates/_map.html`) is inline SVG projected at build time from `berlin_map.json` (regenerate with `scripts/make_berlin_map.py`, not part of the daily run) plus each `Cinema`'s `lat`/`lon`; new adapters should set coordinates. The visitor's location only comes from a button or a tap, is used in the browser and never stored or sent. Pico CSS and Alpine.js are vendored in `src/reflick/static/` (no CDN, no JS build step). Every screening is rendered as plain HTML and Alpine only hides non-matching rows, so the page must keep working without JavaScript. All links must stay relative (served under a GitHub Pages sub-path).
 - **Schema changes**: tables are created with `CREATE TABLE IF NOT EXISTS` in `db.py`; new columns on existing tables go in `_migrate`.
 
 ## Conventions
