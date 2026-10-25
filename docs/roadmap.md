@@ -8,7 +8,8 @@ Ordered so the risky parts surface early. Status as of 2026-10-25:
 - [x] Fix the revival rule: the film's year is at least 5 years ago, or the
       cinema labels it a re-release (see README)
 - [x] Choose the first cinemas: Arsenal, Babylon Mitte, Hackesche Höfe Kino,
-      Lichtblick-Kino, Zeughauskino and the 14 Yorck cinemas
+      Lichtblick-Kino, Zeughauskino and the 14 Yorck cinemas; Brotfabrik Kino
+      added as the first of a survey of further candidates (2026-10-25)
 
 ## 2. Survey data sources and legal side
 
@@ -19,6 +20,7 @@ each scraper will be.
 | --- | --- | --- | --- | --- |
 | Arsenal | arsenal-berlin.de/kalender/ (now in Wedding, Plantagenstraße 30) | JSON API behind the calendar (`/api/v1/search/calendar/`, TYPO3 Solr, 12 events a page) with credits, format, language, series and ticket link | robots.txt returns 404 (no rules) | **Adapter done.** Dates without year. Foyer events are installations and skipped. Tickets via kinotickets.express |
 | Zeughauskino | dhm.de/zeughauskino/spielplan/ | HTML (TYPO3 Solr listing, 10 a page) with ISO start time, series, country/year, format, sometimes language | Allowed | **Adapter done.** Listing runs on into placeholder dates (2064) after the real programme, so paging stops 180 days ahead. Screenings with guests lack facts in the listing; their pages are read and cached. macOS curl rejects the certificate chain, Python/httpx doesn't. Tickets via cinetixx |
+| Brotfabrik Kino | brotfabrik-berlin.de/kino/ | JSON API of The Events Calendar (`/wp-json/tribe/events/v1/events?categories=kino`, 50 a page) with full start time, ticket link and a credits line in the description; iCal and JSON-LD too | Allowed (`Disallow:` empty); Impressum has no usage clause | **Adapter done.** Venue with stage and gallery too, so only the "kino" category is read. The API's next-page link drops that filter, so page URLs are built by the adapter. Tickets via weeztix |
 | Babylon Mitte | babylonberlin.eu/programm | HTML (Joomla), no JSON-LD; whole programme on one page, one `li.mix` per screening with full timestamp | Allowed | **Adapter done.** Credit line is cut off, so film pages are read when the year is missing. Also lists theatre and readings (skipped). Server omits its intermediate certificate: Python/httpx copes, macOS curl doesn't |
 | Hackesche Höfe Kino | hoefekino.de/programm-tickets/aktuelles-programm/ | HTML (TYPO3), no JSON-LD; programme page links every film, film pages have credits + all showtimes | Allowed | **Adapter done.** Dates without year; tickets via kinoheld; 35mm and DEFA specials. The cinema's year is sometimes a re-release year (*The Zone of Interest* as 2025) or missing, so some repertory films don't count as revivals |
 | Lichtblick-Kino | lichtblick-kino.org/programm/ | HTML (WordPress), no JSON-LD; monthly PDF too | Allowed | **Adapter done.** Film pages have credits + all showtimes; tickets via kinoheld; labels "Filmklassiker", "Wiederaufführung in 4K" |
@@ -51,7 +53,7 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       for good too, by title and year. Screenings still carry their own
       copy of the credits, as published
 - [x] **Screening**: cinema, start time, language/subtitles, tags, source URL,
-      ticket link (Lichtblick only, not shown on the site)
+      ticket link (where the cinema gives one, not shown on the site)
 - [x] Language versions unified to OV, OmeU, OmdU, DF and oD (`languages.py`);
       versions the rules can't read are shown as printed and added to
       `OUTLIERS` one by one

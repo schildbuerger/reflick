@@ -22,6 +22,7 @@ RULES = [
 OUTLIERS = {
     # Silent film: the intertitles are the original language.
     "russische zwischentitel und deutsche untertitel": "OmdU",
+    "deutsche zwischentitel, englische untertitel": "OmeU",
 }
 
 

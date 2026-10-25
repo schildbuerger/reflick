@@ -3,6 +3,7 @@
 from reflick.adapters.arsenal import ArsenalAdapter
 from reflick.adapters.babylon import BabylonAdapter
 from reflick.adapters.base import Adapter
+from reflick.adapters.brotfabrik import BrotfabrikAdapter
 from reflick.adapters.hoefe import HoefeAdapter
 from reflick.adapters.lichtblick import LichtblickAdapter
 from reflick.adapters.yorck import YorckAdapter
@@ -13,6 +14,7 @@ ADAPTERS: dict[str, type[Adapter]] = {
     for adapter in (
         ArsenalAdapter,
         BabylonAdapter,
+        BrotfabrikAdapter,
         HoefeAdapter,
         LichtblickAdapter,
         YorckAdapter,

@@ -1,0 +1,48 @@
+{
+ "events": [
+  {
+   "id": 2705,
+   "title": "La Haine",
+   "url": "https://brotfabrik-berlin.de/veranstaltung/la-haine-3/",
+   "start_date": "2026-11-19 21:00:00",
+   "timezone": "Europe/Berlin",
+   "categories": [
+    {
+     "name": "Kino",
+     "slug": "kino"
+    }
+   ],
+   "description": "<p class=\"p1\"><strong>19.11., 21 Uhr</strong></p>\n<p class=\"p1\">F 1995 | 98 min | Spielfilm | R: Mathieu Kassovitz | OmU</p>\n<p class=\"p1\">Es ist irgendein Morgen in irgendeinem Beton-Ghetto in irgendeiner Pariser Banlieue. Nach einer Nacht voller Gewalt zwischen der Polizei und einer Gruppe Jugendlicher herrscht eine höchst angespannte Atmosphäre. Ein 16-jähriger ringt mit dem Tod, nachdem er in einem Verhör brutal zusammengeschlagen wurde. Seine Freunde Vinz, Saïd und Hubert sind getrieben vom Hass gegen das System und schwören Rache, sollte ihr Freund nicht überleben. Und die Zeit tickt wie eine Bombe an diesem Tag, der ihr Leben verändern wird.<br />\n30 Jahre nach seiner Uraufführung hat »La Haine« nichts von seiner Sprengkraft verloren und ist in seiner schonungslosen Kritik an sozialer Ungleichheit, Rassismus und Polizeigewalt aktueller denn je. Ein filmischer Wutausbruch, der Generationen prägte und dessen Einfluss noch immer andauert. Der damals erst 27-jährige Mathieu Kassovitz wurde für »La Haine« bei den Filmfestspielen von Cannes mit dem Preis für die beste Regie ausgezeichnet, während die Hauptdarsteller Vincent Cassel, Saïd Taghmaoui und Hubert Koundé mit ihren beeindruckenden Leistungen den Grundstein für große Karrieren legten.</p>",
+   "website": "https://weeztix.shop/x98qbw7s",
+   "venue": {
+    "venue": "KINO Brotfabrik",
+    "address": "Cali­ga­ri­platz 1",
+    "zip": "13086",
+    "city": "Berlin"
+   }
+  },
+  {
+   "id": 3923,
+   "title": "Under Berlin Film Festival (UBFF) 2026 | Programme #1 | Run River!",
+   "url": "https://brotfabrik-berlin.de/veranstaltung/under-berlin-film-festival-ubff-2026-programme-1-run-river/",
+   "start_date": "2026-11-12 19:00:00",
+   "timezone": "Europe/Berlin",
+   "categories": [
+    {
+     "name": "Kino",
+     "slug": "kino"
+    }
+   ],
+   "description": "<p class=\"p1\"><strong>12.11., 19 Uhr (OmeU)</strong></p>\n<p class=\"p1\"><strong>Run River!</strong></p>\n<p class=\"p1\">Russian Federation 2025, 12 min, Dir.: Anastasiia Ostapenko<br />\nA young girl accidentally meets her father on the street, whom she has not seen for 10 years. After a series of doubts, the girl decides not only to meet the past eye-to-eye, but also to try to get back her dog, which her father took with him when he left the family.</p>",
+   "website": "https://weeztix.shop/dqg74q3s",
+   "venue": {
+    "venue": "KINO Brotfabrik",
+    "address": "Cali­ga­ri­platz 1",
+    "zip": "13086",
+    "city": "Berlin"
+   }
+  }
+ ],
+ "total": 119,
+ "total_pages": 3
+}

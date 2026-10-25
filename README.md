@@ -52,8 +52,8 @@ python3 -m venv .venv
 .venv/bin/reflick list --days 14  # upcoming revivals in the terminal (--all for everything)
 ```
 
-Cinemas covered so far: Arsenal, Babylon Mitte, Hackesche Höfe Kino,
-Lichtblick-Kino, Zeughauskino, and the 14 Yorck cinemas (Babylon Kreuzberg,
+Cinemas covered so far: Arsenal, Babylon Mitte, Brotfabrik Kino, Hackesche
+Höfe Kino, Lichtblick-Kino, Zeughauskino, and the 14 Yorck cinemas (Babylon Kreuzberg,
 Blauer Stern, Capitol Dahlem, Cinema Paris, Delphi Filmpalast, delphi LUX,
 Filmtheater am Friedrichshain, Kant Kino, Kino International, Neues Off,
 Odeon, Passage, Rollberg, Yorck).
