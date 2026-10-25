@@ -62,8 +62,9 @@ Add or update packages with `uv add <package>` (`uv add --dev` for tools) or
 Dependabot proposes updates weekly, for packages and for the GitHub Actions
 the workflow uses, which are pinned to commit SHAs.
 
-Cinemas covered so far: Arsenal, Babylon Mitte, Brotfabrik Kino, Hackesche
-Höfe Kino, Lichtblick-Kino, Zeughauskino, and the 14 Yorck cinemas (Babylon Kreuzberg,
+Cinemas covered so far: Arsenal, Babylon Mitte, Brotfabrik Kino,
+Bundesplatz-Kino, Filmkunst 66, Hackesche Höfe Kino, Il Kino, Kino Krokodil,
+Lichtblick-Kino, Sinema Transtopia, Zeughauskino, and the 14 Yorck cinemas (Babylon Kreuzberg,
 Blauer Stern, Capitol Dahlem, Cinema Paris, Delphi Filmpalast, delphi LUX,
 Filmtheater am Friedrichshain, Kant Kino, Kino International, Neues Off,
 Odeon, Passage, Rollberg, Yorck).
