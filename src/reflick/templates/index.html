@@ -236,13 +236,18 @@
         dragged() {
           return Boolean(zoomer?.dragged());
         },
-        // Picking a pin scrolls its card into view within the cards' own list;
-        // scrollIntoView would scroll the page too, hiding the map's top under
-        // the filter bar.
+        // Picking a pin brings its card into view: within the cards' own list
+        // where it scrolls (wide screens), else in the page (phones, where the
+        // cards follow below the map).
         select(pin) {
           this.selected = this.selected === pin ? null : pin;
           const card = this.selected && document.getElementById(`card-${PIN_CINEMAS[pin][0]}`);
-          if (card) this.$nextTick(() => card.parentElement.scrollTo({ top: card.offsetTop - 4, behavior: "smooth" }));
+          if (!card) return;
+          const list = card.parentElement;
+          this.$nextTick(() => {
+            if (list.scrollHeight > list.clientHeight) list.scrollTo({ top: card.offsetTop - 4, behavior: "smooth" });
+            else card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          });
         },
         isSelected(cinema) {
           return this.selected !== null && PIN_OF[cinema] === this.selected;

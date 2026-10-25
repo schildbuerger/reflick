@@ -242,6 +242,19 @@
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
     }
     .card { margin: 0; padding: 0.75rem; }
+    /* Phones: a narrow scrolling strip of cards under the map is hard to use.
+       Map and legend fill the first screen instead, less ~3rem where the first
+       card peeks out, and the cards follow below in the page itself. */
+    @media (max-width: 576px) {
+      .mapview { height: auto; min-height: 0; }
+      .mapgrid, .mapgrid .cards { flex: none; }
+      .mapcol {
+        flex: none; min-height: 20rem;
+        height: calc(100vh - var(--map-top, 12rem) - 3.5rem);
+        height: calc(100dvh - var(--map-top, 12rem) - 3.5rem);
+      }
+      .mapgrid .cards { overflow: visible; }
+    }
     @media (min-width: 992px) {
       .mapgrid { flex-direction: row; gap: 1rem; }
       .mapcol, .mapgrid .cards { flex: 1 1 0; }
