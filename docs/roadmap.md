@@ -44,9 +44,12 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 ## 3. Data model
 
 - [x] **Cinema**: name, address, neighbourhood, website
-- [~] **Film**: title, original title, year and director are stored per
-      screening; OMDb matches (IMDb id, title, genres, votes,
-      year) live in `film_matches`, Wikidata titles in `film_titles`. There is no separate film table yet
+- [x] **Film**: the `films` table keeps each cinema's credits (year,
+      director, original title, country) for good, by the cinema's own key,
+      so a film that returns needs no new page request (Yorck, Babylon).
+      Wikidata (`film_titles`) and OMDb (`film_matches`) results are kept
+      for good too, by title and year. Screenings still carry their own
+      copy of the credits, as published
 - [x] **Screening**: cinema, start time, language/subtitles, tags, source URL,
       ticket link (Lichtblick only, not shown on the site)
 - [x] Language versions unified to OV, OmeU, OmdU, DF and oD (`languages.py`);

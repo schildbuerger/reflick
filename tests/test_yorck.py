@@ -45,12 +45,19 @@ class FakeFetcher:
 class MemoryCache:
     def __init__(self):
         self.data = {}
+        self.films = {}
 
     def get(self, namespace, key, max_age):
         return self.data.get((namespace, key))
 
     def set(self, namespace, key, value):
         self.data[(namespace, key)] = value
+
+    def film(self, source, key):
+        return self.films.get((source, key))
+
+    def save_film(self, source, key, credits):
+        self.films[(source, key)] = credits
 
 
 @pytest.fixture
@@ -171,7 +178,7 @@ def test_film_page_without_film_data_is_a_warning_and_not_cached():
     programme = no_retry_delay().fetch(fetcher, cache)
     assert fetcher.requested.count(f"{BASE_URL}/filme/angel-heart") == 3
     assert any("film angel-heart" in w for w in programme.warnings)
-    assert ("yorck-film", "angel-heart") not in cache.data
+    assert ("yorck", "angel-heart") not in cache.films
     [s, *_] = by_title(programme, "Angel Heart")
     assert s.year == 1987  # falls back to the German release year
 

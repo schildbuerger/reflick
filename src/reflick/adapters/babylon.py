@@ -164,6 +164,7 @@ class BabylonAdapter(Adapter):
     id = "babylon"
 
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
+        cache = cache or Cache()
         screenings = parse_programme(fetcher.get(PROGRAMME_URL))
         # Fill in credits the programme's cut-off text hides, one request per film.
         details: dict[str, dict] = {}
@@ -171,8 +172,16 @@ class BabylonAdapter(Adapter):
             if s.year is not None:
                 continue
             if s.source_url not in details:
-                details[s.source_url] = parse_film_page(fetcher.get(s.source_url))
+                details[s.source_url] = self._credits(fetcher, cache, s.source_url)
             for key, value in details[s.source_url].items():
                 if key == "language" or getattr(s, key) is None:
                     setattr(s, key, value)
         return Programme(cinemas=[CINEMA], screenings=screenings)
+
+    def _credits(self, fetcher: Fetcher, cache: Cache, url: str) -> dict:
+        if (known := cache.film(self.id, url)) is not None:
+            return known
+        credits = parse_film_page(fetcher.get(url))
+        if credits.get("year") is not None:  # incomplete credits are fetched again next run
+            cache.save_film(self.id, url, credits)
+        return credits

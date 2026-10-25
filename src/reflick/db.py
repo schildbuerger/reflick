@@ -47,6 +47,22 @@ CREATE TABLE IF NOT EXISTS raw_screenings (
 );
 CREATE INDEX IF NOT EXISTS raw_screenings_run ON raw_screenings(run_id);
 -- Parsed detail pages adapters don't need to fetch every day (e.g. film credits).
+-- A film as one source lists it, by the source's own key (Yorck: the film's
+-- slug, Babylon: its page). Credits don't change, so they're kept for good:
+-- a film that returns months later needs no new page request.
+CREATE TABLE IF NOT EXISTS films (
+    source TEXT NOT NULL,
+    key TEXT NOT NULL,
+    year INTEGER,
+    director TEXT,
+    original_title TEXT,
+    country TEXT,
+    runtime_min INTEGER,
+    language TEXT,  -- only where the film page names it (Babylon)
+    first_seen TEXT NOT NULL,
+    last_seen TEXT NOT NULL,
+    PRIMARY KEY (source, key)
+);
 CREATE TABLE IF NOT EXISTS page_cache (
     namespace TEXT NOT NULL,
     key TEXT NOT NULL,
@@ -99,6 +115,17 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE film_matches ADD COLUMN imdb_votes INTEGER")
     if "release_year" not in _columns(conn, "film_titles"):
         conn.execute("ALTER TABLE film_titles ADD COLUMN release_year INTEGER")
+    # Yorck credits lived in page_cache for 30 days before the films table.
+    for row in conn.execute("SELECT * FROM page_cache WHERE namespace = 'yorck-film'").fetchall():
+        conn.execute(
+            "INSERT OR IGNORE INTO films (source, key, year, director, original_title, country,"
+            " first_seen, last_seen) VALUES ('yorck', :key, :year, :director, :original_title,"
+            " :country, :seen, :seen)",
+            {"key": row["key"], "seen": row["fetched_at"], **{
+                k: json.loads(row["value"]).get(k) for k in ("year", "director", "original_title", "country")
+            }},
+        )
+    conn.execute("DELETE FROM page_cache WHERE namespace = 'yorck-film'")
     conn.commit()
 
 
@@ -111,8 +138,11 @@ def connect(path: Path) -> sqlite3.Connection:
     return conn
 
 
+FILM_FIELDS = ("year", "director", "original_title", "country", "runtime_min", "language")
+
+
 class Cache:
-    """JSON values by (namespace, key), e.g. ("yorck-film", slug) -> credits."""
+    """Films by (source, key), see the films table, and JSON values by (namespace, key), e.g. ("yorck-film", slug) -> credits."""
 
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
@@ -131,6 +161,30 @@ class Cache:
         self.conn.execute(
             "INSERT OR REPLACE INTO page_cache VALUES (?, ?, ?, ?)",
             (namespace, key, json.dumps(value, ensure_ascii=False), _now()),
+        )
+        self.conn.commit()
+
+    def film(self, source: str, key: str) -> dict | None:
+        """A film's stored credits (only the fields it has), or None if unknown."""
+        row = self.conn.execute(
+            "SELECT * FROM films WHERE source = ? AND key = ?", (source, key)
+        ).fetchone()
+        if row is None:
+            return None
+        self.conn.execute(
+            "UPDATE films SET last_seen = ? WHERE source = ? AND key = ?", (_now(), source, key)
+        )
+        self.conn.commit()
+        return {k: row[k] for k in FILM_FIELDS if row[k] is not None}
+
+    def save_film(self, source: str, key: str, credits: dict) -> None:
+        now = _now()
+        self.conn.execute(
+            f"INSERT INTO films (source, key, {', '.join(FILM_FIELDS)}, first_seen, last_seen)"
+            f" VALUES (?, ?, {', '.join('?' * len(FILM_FIELDS))}, ?, ?)"
+            f" ON CONFLICT (source, key) DO UPDATE SET"
+            f" {', '.join(f'{k} = excluded.{k}' for k in FILM_FIELDS)}, last_seen = excluded.last_seen",
+            (source, key, *(credits.get(k) for k in FILM_FIELDS), now, now),
         )
         self.conn.commit()
 

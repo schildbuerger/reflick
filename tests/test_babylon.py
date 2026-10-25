@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from reflick import db
 from reflick.adapters.babylon import (
     BERLIN,
     BabylonAdapter,
@@ -109,6 +110,19 @@ def test_adapter_reads_film_page_only_when_year_is_missing():
     assert strangelove in fetcher.requested
     assert not any("exorcist" in url for url in fetcher.requested)
 
+
+
+def test_film_pages_are_kept_for_the_next_run(tmp_path):
+    strangelove = next(
+        s.source_url for s in parse_programme(fixture("programm.html")) if "Strangelove" in s.title
+    )
+    pages = {"https://babylonberlin.eu/programm": fixture("programm.html"), strangelove: fixture("dr-strangelove.html")}
+    cache = db.Cache(db.connect(tmp_path / "test.sqlite"))
+    BabylonAdapter().fetch(FakeFetcher(pages), cache)
+    second = FakeFetcher(pages)
+    s = next(s for s in BabylonAdapter().fetch(second, cache).screenings if "Strangelove" in s.title)
+    assert strangelove not in second.requested
+    assert (s.year, s.language) == (1964, "OmU")
 
 @pytest.mark.parametrize(
     ("text", "expected"),

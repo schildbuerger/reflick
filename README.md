@@ -59,8 +59,10 @@ Filmtheater am Friedrichshain, Kant Kino, Kino International, Neues Off,
 Odeon, Passage, Rollberg, Yorck).
 
 Yorck's film pages (year, director, original title) are only read for
-films that may be revivals, and cached for 30 days in the `page_cache`
-table, so a daily run makes about ten requests once the cache is warm.
+films that may be revivals, and kept for good in the `films` table, so a
+daily run makes about ten requests, and a film that returns months later
+needs none. Babylon's film pages, read when the programme lacks a year, are
+kept the same way.
 
 ### Titles (Wikidata)
 

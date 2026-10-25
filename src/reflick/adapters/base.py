@@ -106,6 +106,12 @@ class Cache:
     def set(self, namespace: str, key: str, value: dict) -> None:
         pass
 
+    def film(self, source: str, key: str) -> dict | None:
+        return None
+
+    def save_film(self, source: str, key: str, credits: dict) -> None:
+        pass
+
 
 @dataclass
 class Programme:

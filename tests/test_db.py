@@ -73,6 +73,26 @@ def test_cache_expires(tmp_path):
     assert cache.get("yorck-film", "other", timedelta(days=30)) is None
 
 
+def test_films_are_kept_for_good(tmp_path):
+    conn = db.connect(tmp_path / "test.sqlite")
+    cache = db.Cache(conn)
+    assert cache.film("yorck", "angel-heart") is None
+    cache.save_film("yorck", "angel-heart", {"year": 1987, "director": "Alan Parker"})
+    conn.execute("UPDATE films SET first_seen = '2020-01-01', last_seen = '2020-01-01'")
+    db.prune_runs(conn, keep=timedelta(days=28))
+    assert cache.film("yorck", "angel-heart") == {"year": 1987, "director": "Alan Parker"}
+    row = conn.execute("SELECT first_seen, last_seen FROM films").fetchone()
+    assert row["first_seen"] == "2020-01-01" and row["last_seen"] > "2026"  # seen again just now
+
+
+def test_yorck_page_cache_moves_to_films(tmp_path):
+    path = tmp_path / "test.sqlite"
+    db.Cache(db.connect(path)).set("yorck-film", "angel-heart", {"year": 1987, "director": "Alan Parker"})
+    conn = db.connect(path)  # connecting migrates
+    assert db.Cache(conn).film("yorck", "angel-heart") == {"year": 1987, "director": "Alan Parker"}
+    assert conn.execute("SELECT COUNT(*) FROM page_cache").fetchone()[0] == 0
+
+
 def test_old_database_is_migrated(tmp_path):
     path = tmp_path / "old.sqlite"
     old = sqlite3.connect(path)

@@ -18,7 +18,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 import httpx
 
@@ -34,8 +34,6 @@ SKIP_FORMATS = {"Sneak"}  # surprise previews: the film is unknown
 # Specials that are readings, stage shows or (mostly short-film) festivals.
 SKIP_SPECIAL_CATEGORIES = {"Lesung", "Bühne", "Festival"}
 SERIES_TYPES = {"Film Series", "Film Special"}
-FILM_CACHE = "yorck-film"
-FILM_CACHE_AGE = timedelta(days=30)
 FILM_PAGE_ATTEMPTS = 3
 
 
@@ -226,8 +224,8 @@ class YorckAdapter(Adapter):
         return Programme(cinemas=list(cinemas.values()), screenings=screenings, warnings=warnings)
 
     def _credits(self, fetcher: Fetcher, cache: Cache, slug: str, warnings: list[str]) -> dict:
-        if (cached := cache.get(FILM_CACHE, slug, FILM_CACHE_AGE)) is not None:
-            return cached
+        if (known := cache.film(self.id, slug)) is not None:
+            return known
         # Pages served without data under load usually come back whole a little later.
         for attempt in range(FILM_PAGE_ATTEMPTS):
             if attempt:
@@ -241,5 +239,5 @@ class YorckAdapter(Adapter):
             warnings.append(f"film {slug}: {error!r} ({FILM_PAGE_ATTEMPTS} attempts)")
             return {}
         if credits["year"] is not None:  # incomplete credits are fetched again next run
-            cache.set(FILM_CACHE, slug, credits)
+            cache.save_film(self.id, slug, credits)
         return credits
