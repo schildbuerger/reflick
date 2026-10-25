@@ -90,8 +90,6 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       first, but it's the US release: Aguirre 1977, not 1972.) Only revival
       candidates by the cinema's year are looked up, so Wikidata's year can
       drop a film but not add one
-- [ ] Titles the cinema prints in capitals ("SÜHNE") stay in capitals unless
-      Wikidata or OMDb has the film
 
 ## 6. Storage and backend
 
