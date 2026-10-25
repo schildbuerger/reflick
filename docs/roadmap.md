@@ -26,8 +26,9 @@ each scraper will be.
 
 - [~] Read each site's terms and robots.txt: robots.txt checked (and obeyed by
       the scraper) for the six sources; terms of use not read yet
-- [ ] Ask cinemas directly for a feed (small repertory cinemas often welcome
-      the exposure)
+- [~] Ask cinemas for permission to use their programme data, and for a
+      feed if they have one (small repertory cinemas often welcome the
+      exposure): requests sent by email on 2026-10-25, waiting for replies
 - [~] Impressum and DSGVO privacy policy, which a public German site needs:
       pages exist with placeholders (`[[ ... ]]`) for name, address, contact
       and the GitHub transfer basis; `reflick build` warns until they're
