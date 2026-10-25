@@ -1,6 +1,6 @@
 # Roadmap
 
-Ordered so the risky parts surface early. Status as of 2026-10-24:
+Ordered so the risky parts surface early. Status as of 2026-10-25:
 `[x]` done, `[~]` partly done, `[ ]` open.
 
 ## 1. Define scope
@@ -9,8 +9,6 @@ Ordered so the risky parts surface early. Status as of 2026-10-24:
       cinema labels it a re-release (see README)
 - [x] Choose the first cinemas: Arsenal, Babylon Mitte, Hackesche Höfe Kino,
       Lichtblick-Kino, Zeughauskino and the 14 Yorck cinemas
-- [ ] Decide whether a cinema's label alone should count for recent films
-      (Yorck files e.g. *Bottoms* (2023) under "Klassiker")
 
 ## 2. Survey data sources and legal side
 
@@ -47,11 +45,14 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       `film_matches`. There is no separate film table yet
 - [x] **Screening**: cinema, start time, language/subtitles, tags, source URL,
       ticket link (Lichtblick only, not shown on the site)
+- [x] Language versions unified to OV, OmeU, OmdU, DF and oD (`languages.py`);
+      versions the rules can't read are shown as printed and added to
+      `OUTLIERS` one by one
 - [x] **Series**: stored per screening (e.g. "Clockwork Kubrick", "Halloween
       im Kant")
 - [x] Raw scraped data kept separate from cleaned data: `raw_screenings` holds
-      what cinemas publish; title clean-up and OMDb data are applied at build
-      time
+      what cinemas publish; title clean-up, language codes, Wikidata and OMDb data
+      are applied at build time
 
 ## 4. Ingestion pipeline
 
@@ -61,9 +62,11 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 - [x] Alert when a source or a single cinema suddenly returns zero
       screenings: the scrape exits non-zero, the daily workflow still
       publishes and then fails, so GitHub emails a warning
-- [x] Daily scheduled run: `.github/workflows/publish.yml` (03:33 Berlin time), with
-      the database kept in the Actions cache and old runs pruned. Not run on
-      GitHub yet
+- [~] Daily scheduled run: `.github/workflows/publish.yml` (03:33 Berlin
+      time, set with `timezone: Europe/Berlin`), with the database kept in the
+      Actions cache and old runs pruned. Runs on push and by hand work; the
+      first scheduled run (04:00 UTC on 2026-10-25) was dropped by GitHub, so
+      a scheduled run is still to be confirmed
 
 ## 5. Film matching and enrichment
 
@@ -75,11 +78,10 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 - [x] Clean titles: language suffixes ("[OmU]"), series prefixes, cinema
       add-ons ("LIVE mit Babylon Orchester Berlin") shown as badges, trailing
       years
-- [ ] Manual review queue for uncertain matches
 - [~] Apply the revival rule: uses the cinema's year plus any cinema label.
       OMDb's year isn't used for it yet
 - [ ] Titles the cinema prints in capitals ("SÜHNE") stay in capitals unless
-      OMDb has the film
+      Wikidata or OMDb has the film
 
 ## 6. Storage and backend
 
@@ -94,10 +96,10 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       the other filters; several days can be picked (e.g. a weekend)
 - [x] Filters: search, cinema, language/subtitles, genre, plus a Reset
       button
+- [x] Filter: popularity (well known, lesser known, rarely seen, unknown),
+      from IMDb vote counts via OMDb
 - [x] Filter: districts, multi-select (e.g. Neukölln + Kreuzberg); only
       districts with upcoming revivals are offered
-- [ ] Filter: format (35mm, 4K restoration, silent film with live music:
-      needs a mapping of the cinemas' different labels)
 - [x] Sticky filter bar on screens wider than 576px, with day headers
       sticking below it
 - [ ] Mobile filter sheet: on phones, a compact sticky bar with the search
@@ -105,19 +107,19 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
       stacked full-width, updating the list live and ending in "Show n
       screenings" and Reset. Could use a native `<dialog>`, which Pico
       already styles. Until then the filters scroll away on phones
-- [ ] Film page with all upcoming screenings of one title: built, then
-      removed in favour of the single page. Decide whether to bring it back
+- [x] Screenings that have started are hidden in the browser, also while the
+      page stays open, since the site is built only once a day. Days read
+      "Today" and "Tomorrow"
 - [x] iCal feed (`reflick.ics`)
-- [x] Titles link to the film's page on the cinema's site; cinema names link
-      to Google Maps
-- [~] Mobile-first: the layout adapts to narrow screens, but hasn't been
-      checked on a real phone
+- [x] A Details button links to the film's page on the cinema's site; cinema
+      names link to Google Maps; matched films link to Letterboxd
+- [x] Mobile-first: the layout adapts to narrow screens, checked on a real
+      phone
 
 ## 8. Hosting and operations
 
-- [~] Static hosting plus a scheduled job: GitHub Pages workflow ready; the
-      repository, Pages setting and `OMDB_API_KEY` secret still need setting
-      up on GitHub (see README, "Publishing")
+- [x] Static hosting plus a scheduled job: live on GitHub Pages at
+      schildbuerger.github.io/reflick/, with the `OMDB_API_KEY` secret set
 - [ ] Register the domain once the name is final
 
 ## 9. MVP launch
