@@ -18,7 +18,7 @@ uv sync
 .venv/bin/reflick build                            # rebuild site/ from the DB only
 .venv/bin/reflick list --days 14 [--all]           # upcoming revivals in the terminal
 .venv/bin/reflick prune --keep-days 28
-.venv/bin/python -m http.server 8765 --directory site   # preview (also in .claude/launch.json)
+.venv/bin/python -m http.server 8765 --directory site   # preview
 ```
 
 Global flags `--db` (default `data/reflick.sqlite`) and `--out` (default `site/`) go before the subcommand. `OMDB_API_KEY` is read from `.env` (gitignored); without it everything works except genres.

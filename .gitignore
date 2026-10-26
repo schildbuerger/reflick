@@ -8,3 +8,6 @@ __pycache__/
 .pytest_cache/
 data/
 site/
+.ruff_cache/
+.claude/
+*.code-workspace
