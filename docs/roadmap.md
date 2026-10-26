@@ -114,11 +114,12 @@ straightforward. If most use PDFs, ingestion will take most of the effort.
 - [x] Alert when a source or a single cinema suddenly returns zero
       screenings: the scrape exits non-zero, the daily workflow still
       publishes and then fails, so GitHub emails a warning
-- [~] Daily scheduled run: `.github/workflows/publish.yml` (03:33 Berlin
-      time, set with `timezone: Europe/Berlin`), with the database kept in the
-      Actions cache and old runs pruned. Runs on push and by hand work; the
-      first scheduled run (04:00 UTC on 2026-10-25) was dropped by GitHub, so
-      a scheduled run is still to be confirmed
+- [~] Daily scheduled run: `.github/workflows/publish.yml` (02:33 UTC, i.e.
+      03:33 Berlin time in winter), with the database kept in the Actions
+      cache and old runs pruned. Runs on push and by hand work, but with
+      `timezone: Europe/Berlin` in the schedule it never fired (2026-10-25 and
+      -26, no GitHub incident), so it's plain UTC since 2026-10-26; a
+      scheduled run is still to be confirmed
 
 ## 5. Film matching and enrichment
 

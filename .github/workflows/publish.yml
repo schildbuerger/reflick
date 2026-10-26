@@ -17,8 +17,10 @@ name: Scrape and publish
 
 on:
   schedule:
-    - cron: "33 3 * * *"  # daily; off the full hour, when GitHub delays or drops runs
-      timezone: "Europe/Berlin"
+    # Daily at 02:33 UTC: 03:33 in Berlin in winter, 04:33 in summer. Off the
+    # full hour, when GitHub delays or drops runs. Plain UTC: with a
+    # `timezone:` key the schedule never fired (2026-10-25 and -26).
+    - cron: "33 2 * * *"
   workflow_dispatch:      # "Run workflow" button in the Actions tab
   push:
     branches: [main]
