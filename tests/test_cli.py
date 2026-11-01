@@ -75,6 +75,31 @@ def test_an_empty_source_falls_back_to_its_last_good_run(run):
     assert [s.title for s in db.latest_screenings(conn)] == ["Casablanca"]
 
 
+def test_a_missing_document_keeps_the_last_good_run_without_failing(run, capsys):
+    run(adapter("odeon", Programme([ODEON], [screening(ODEON, "Casablanca")])))
+    code, conn = run(adapter("odeon", Programme([ODEON], [], missing="no flyer")))
+    assert code == 0
+    assert statuses(conn) == [("odeon", "ok"), ("odeon", "missing")]
+    assert [s.title for s in db.latest_screenings(conn)] == ["Casablanca"]
+    assert "odeon: NOTICE: no flyer" in capsys.readouterr().out
+
+
+def test_a_document_missing_for_too_long_fails_the_run(run, capsys):
+    _, conn = run(adapter("odeon", Programme([ODEON], [screening(ODEON)])))
+    old = datetime.now(BERLIN) - cli.MISSING_GRACE - timedelta(hours=1)
+    conn.execute("UPDATE runs SET finished_at = ?", (old.isoformat(),))
+    conn.commit()
+    code, _ = run(adapter("odeon", Programme([ODEON], [], missing="no flyer")))
+    assert code == 1
+    assert "odeon: WARNING: no flyer; no good run for 7+ days" in capsys.readouterr().err
+
+
+def test_a_document_missing_without_any_good_run_fails(run):
+    code, conn = run(adapter("odeon", Programme([ODEON], [], missing="no flyer")))
+    assert code == 1
+    assert statuses(conn) == [("odeon", "missing")]
+
+
 def test_adapter_warnings_fail_the_run_but_keep_the_data(run, capsys):
     code, conn = run(adapter("odeon", Programme([ODEON], [screening(ODEON)], ["film x: no data"])))
     assert code == 1

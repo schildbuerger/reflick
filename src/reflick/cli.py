@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -19,6 +19,9 @@ from reflick.wikidata import WikidataClient
 DEFAULT_DB = Path("data/reflick.sqlite")
 DEFAULT_OUT = Path("site")
 BERLIN = ZoneInfo("Europe/Berlin")
+# How long a source may go without its document (Programme.missing) before
+# the run fails and GitHub sends an alert.
+MISSING_GRACE = timedelta(days=7)
 
 
 def load_dotenv(path: Path = Path(".env")) -> None:
@@ -53,6 +56,18 @@ def scrape(args: argparse.Namespace) -> int:
         for warning in programme.warnings:
             print(f"{source}: WARNING: {warning}", file=sys.stderr)
             problems += 1
+        if programme.missing and not screenings:
+            # The cinema published nothing this time; keep its last good data
+            # and alert only once that is too old to trust.
+            db.finish_run(conn, run_id, "missing", programme.missing)
+            last_ok = db.last_update(conn, source)
+            if last_ok and datetime.now(UTC) - last_ok < MISSING_GRACE:
+                print(f"{source}: NOTICE: {programme.missing}; keeping data from {last_ok:%Y-%m-%d}")
+            else:
+                print(f"{source}: WARNING: {programme.missing}; no good run for "
+                      f"{MISSING_GRACE.days}+ days", file=sys.stderr)
+                problems += 1
+            continue
         if not screenings:
             # A scraper that suddenly finds nothing has most likely broken.
             db.finish_run(conn, run_id, "empty")

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS runs (
     source TEXT NOT NULL,  -- adapter id
     started_at TEXT NOT NULL,
     finished_at TEXT,
-    status TEXT NOT NULL,  -- running | ok | empty | failed
+    status TEXT NOT NULL,  -- running | ok | empty | missing | failed
     error TEXT
 );
 CREATE TABLE IF NOT EXISTS raw_screenings (
@@ -367,9 +367,12 @@ def cinemas(conn: sqlite3.Connection) -> dict[str, Cinema]:
     return {r["id"]: Cinema(**dict(r)) for r in rows}
 
 
-def last_update(conn: sqlite3.Connection) -> datetime | None:
-    """When the most recent successful run finished."""
-    value = conn.execute("SELECT MAX(finished_at) FROM runs WHERE status = 'ok'").fetchone()[0]
+def last_update(conn: sqlite3.Connection, source: str | None = None) -> datetime | None:
+    """When the most recent successful run (of `source`, if given) finished."""
+    value = conn.execute(
+        "SELECT MAX(finished_at) FROM runs WHERE status = 'ok' AND (? IS NULL OR source = ?)",
+        (source, source),
+    ).fetchone()[0]
     return datetime.fromisoformat(value) if value else None
 
 

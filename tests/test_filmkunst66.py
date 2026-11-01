@@ -104,9 +104,11 @@ def test_adapter_reads_the_linked_flyer(monkeypatch):
     assert fetcher.requested == [PROGRAMME_URL, FLYER_URL]
     assert len(programme.screenings) == 50
     assert programme.warnings == []
+    assert programme.missing is None
 
 
-def test_adapter_warns_without_a_flyer():
+def test_adapter_reports_a_missing_flyer():
     programme = Filmkunst66Adapter().fetch(FakeFetcher("<p>Programm folgt</p>"))
     assert programme.screenings == []
-    assert programme.warnings == ["no weekly flyer linked on the programme page"]
+    assert programme.warnings == []
+    assert programme.missing == "no weekly flyer linked on the programme page"

@@ -178,6 +178,9 @@ class Programme:
     cinemas: list[Cinema]
     screenings: list[RawScreening]
     warnings: list[str] = field(default_factory=list)
+    # Set when the cinema hasn't published its document (e.g. no flyer this
+    # week): not a broken scraper, so `scrape` alerts only if it lasts.
+    missing: str | None = None
 
 
 class Adapter(ABC):

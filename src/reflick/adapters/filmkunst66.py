@@ -144,9 +144,9 @@ class Filmkunst66Adapter(Adapter):
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
         page = fetcher.get(PROGRAMME_URL)
         flyers = dict.fromkeys(urljoin(BASE_URL, href) for href in FLYER_RE.findall(page))
-        warnings = [] if flyers else ["no weekly flyer linked on the programme page"]
+        missing = None if flyers else "no weekly flyer linked on the programme page"
         screenings: list[RawScreening] = []
         for url in flyers:  # at a week's change there can be two
             screenings += parse_flyer(pdf_text(fetcher.get_bytes(url)))
         unique = {(s.title, s.start): s for s in screenings}
-        return Programme(cinemas=[CINEMA], screenings=list(unique.values()), warnings=warnings)
+        return Programme(cinemas=[CINEMA], screenings=list(unique.values()), missing=missing)
