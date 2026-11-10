@@ -5,6 +5,7 @@ import pytest
 
 from reflick.adapters import filmkunst66
 from reflick.adapters.filmkunst66 import (
+    BASE_URL,
     BERLIN,
     PROGRAMME_URL,
     Filmkunst66Adapter,
@@ -80,13 +81,14 @@ def test_week_start_across_new_year():
 
 
 class FakeFetcher:
-    def __init__(self, page: str):
+    def __init__(self, page: str, others: dict[str, str] | None = None):
         self.page = page
+        self.others = others or {}
         self.requested: list[str] = []
 
     def get(self, url: str) -> str:
         self.requested.append(url)
-        return self.page
+        return self.others.get(url, self.page)
 
     def get_bytes(self, url: str) -> bytes:
         self.requested.append(url)
@@ -108,7 +110,35 @@ def test_adapter_reads_the_linked_flyer(monkeypatch):
 
 
 def test_adapter_reports_a_missing_flyer():
-    programme = Filmkunst66Adapter().fetch(FakeFetcher("<p>Programm folgt</p>"))
+    fetcher = FakeFetcher("<p>Programm folgt</p>")
+    programme = Filmkunst66Adapter().fetch(fetcher)
+    assert fetcher.requested == [PROGRAMME_URL, BASE_URL]
     assert programme.screenings == []
     assert programme.warnings == []
     assert programme.missing == "no weekly flyer linked on the programme page"
+    assert programme.paused is None
+
+
+def test_adapter_reports_a_pause_announced_on_the_homepage():
+    homepage = (FIXTURES / "homepage-pause-notice.html").read_text(encoding="utf-8")
+    fetcher = FakeFetcher("<p>Programm folgt</p>", {BASE_URL: homepage})
+    programme = Filmkunst66Adapter().fetch(fetcher)
+    assert programme.screenings == []
+    assert programme.paused == (
+        "programme paused, homepage says: Wir bitten um Verständnis, dass wir unser "
+        "Programmangebot kurzfristig unterbrechen müssen, ..."
+    )
+
+
+@pytest.mark.parametrize(
+    ("headline", "paused"),
+    [
+        ("Unser Programm pausiert bis Dezember", True),
+        ("Wir unterbrechen das Programm für Renovierungsarbeiten", True),
+        ("Neues Programm: Frühe Meister", False),
+        ("Kurze Unterbrechung der Kasse wegen Umbau", False),
+    ],
+)
+def test_pause_notice(headline, paused):
+    page = f'<span itemprop="headline">{headline}</span>'
+    assert (filmkunst66.pause_notice(page) == headline) is paused

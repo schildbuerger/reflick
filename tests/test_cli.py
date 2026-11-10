@@ -94,6 +94,14 @@ def test_a_document_missing_for_too_long_fails_the_run(run, capsys):
     assert "odeon: WARNING: no flyer; no good run for 7+ days" in capsys.readouterr().err
 
 
+def test_a_paused_cinema_is_only_noted_however_long_it_lasts(run, capsys):
+    paused = Programme([ODEON], [], missing="no flyer", paused="programme paused")
+    code, conn = run(adapter("odeon", paused))
+    assert code == 0
+    assert statuses(conn) == [("odeon", "paused")]
+    assert "odeon: NOTICE: programme paused" in capsys.readouterr().out
+
+
 def test_a_document_missing_without_any_good_run_fails(run):
     code, conn = run(adapter("odeon", Programme([ODEON], [], missing="no flyer")))
     assert code == 1

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS runs (
     source TEXT NOT NULL,  -- adapter id
     started_at TEXT NOT NULL,
     finished_at TEXT,
-    status TEXT NOT NULL,  -- running | ok | empty | missing | failed
+    status TEXT NOT NULL,  -- running | ok | empty | missing | paused | failed
     error TEXT
 );
 CREATE TABLE IF NOT EXISTS raw_screenings (

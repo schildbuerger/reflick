@@ -15,8 +15,13 @@ heading above it, and the heading "Donnerstag, 22.10. – Mittwoch, 28.10.26"
 dates the week. A title can run over two lines ("Heimsuchung – Eine /
 Jahrhundertgeschichte"), and a line with times but no title is another row
 of screenings of the film above. The flyer covers the current week only.
+
+When no flyer is linked, the homepage's news headlines may say the cinema
+has paused its programme ("... unser Programmangebot kurzfristig
+unterbrechen müssen"); that counts as a pause, not a missing flyer.
 """
 
+import html
 import io
 import re
 from datetime import date, datetime, timedelta
@@ -30,6 +35,12 @@ from reflick.models import Cinema, RawScreening
 BASE_URL = "https://filmkunst66.de/"
 PROGRAMME_URL = urljoin(BASE_URL, "programm")
 FLYER_RE = re.compile(r'href="([^"]*Wochenflyer[^"]*\.pdf)"')
+HEADLINE_RE = re.compile(r'<span itemprop="headline">([^<]*)</span>')
+# "Programm(angebot) ... unterbrechen/pausieren" in one headline, either order.
+PAUSE_RE = re.compile(
+    r"\bProgramm\w*\b.{0,60}\b(?:unterbrech|pausier)\w*|\b(?:unterbrech|pausier)\w*\b.{0,60}\bProgramm",
+    re.IGNORECASE,
+)
 
 CINEMA = Cinema(
     id="filmkunst66",
@@ -133,6 +144,14 @@ def parse_flyer(text: str) -> list[RawScreening]:
     return sorted(screenings, key=lambda s: s.start)
 
 
+def pause_notice(homepage: str) -> str | None:
+    """The homepage headline announcing a break in the programme, if any."""
+    for headline in HEADLINE_RE.findall(homepage):
+        if PAUSE_RE.search(headline := clean(html.unescape(headline))):
+            return headline
+    return None
+
+
 def pdf_text(data: bytes) -> str:
     reader = PdfReader(io.BytesIO(data))
     return "\n".join(page.extract_text(extraction_mode="layout") for page in reader.pages)
@@ -144,9 +163,14 @@ class Filmkunst66Adapter(Adapter):
     def fetch(self, fetcher: Fetcher, cache: Cache | None = None) -> Programme:
         page = fetcher.get(PROGRAMME_URL)
         flyers = dict.fromkeys(urljoin(BASE_URL, href) for href in FLYER_RE.findall(page))
-        missing = None if flyers else "no weekly flyer linked on the programme page"
+        missing = paused = None
+        if not flyers:
+            missing = "no weekly flyer linked on the programme page"
+            if notice := pause_notice(fetcher.get(BASE_URL)):
+                paused = f"programme paused, homepage says: {notice}"
         screenings: list[RawScreening] = []
         for url in flyers:  # at a week's change there can be two
             screenings += parse_flyer(pdf_text(fetcher.get_bytes(url)))
         unique = {(s.title, s.start): s for s in screenings}
-        return Programme(cinemas=[CINEMA], screenings=list(unique.values()), missing=missing)
+        return Programme(cinemas=[CINEMA], screenings=list(unique.values()),
+                         missing=missing, paused=paused)

@@ -56,6 +56,12 @@ def scrape(args: argparse.Namespace) -> int:
         for warning in programme.warnings:
             print(f"{source}: WARNING: {warning}", file=sys.stderr)
             problems += 1
+        if programme.paused and not screenings:
+            # The cinema announced a break; nothing to alert about until it
+            # publishes a programme again.
+            db.finish_run(conn, run_id, "paused", programme.paused)
+            print(f"{source}: NOTICE: {programme.paused}")
+            continue
         if programme.missing and not screenings:
             # The cinema published nothing this time; keep its last good data
             # and alert only once that is too old to trust.

@@ -181,6 +181,9 @@ class Programme:
     # Set when the cinema hasn't published its document (e.g. no flyer this
     # week): not a broken scraper, so `scrape` alerts only if it lasts.
     missing: str | None = None
+    # Set when the cinema says it has stopped showing films for now (e.g. a
+    # pause notice on its homepage): `scrape` only notes it, with no deadline.
+    paused: str | None = None
 
 
 class Adapter(ABC):
